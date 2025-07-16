@@ -59,13 +59,13 @@ cd /var/www
 # Remove existing directory if it exists
 if [ -d "-boltAPPworkmgmt_V1.1" ]; then
     print_warning "Removing existing application directory..."
-    sudo rm -rf -boltAPPworkmgmt_V1.1
+    sudo rm -rf "-boltAPPworkmgmt_V1.1"
 fi
 
 # Clone your repository
 print_status "Cloning repository from GitHub..."
 git clone https://github.com/shakeelmo/-boltAPPworkmgmt_V1.1.git
-cd -boltAPPworkmgmt_V1.1
+cd "-boltAPPworkmgmt_V1.1"
 
 # Set proper permissions
 print_status "Setting proper permissions..."
@@ -79,9 +79,33 @@ npm install
 print_status "Installing backend dependencies..."
 cd server && npm install && cd ..
 
+# Create ecosystem.config.js for PM2
+print_status "Creating PM2 ecosystem configuration..."
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [
+    {
+      name: 'smartuniit-backend',
+      script: './server/index.js',
+      cwd: '/var/www/-boltAPPworkmgmt_V1.1',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001
+      }
+    }
+  ]
+};
+EOF
+
 # Initialize database
 print_status "Initializing database..."
+cd server
 node scripts/initDb.js
+cd ..
 
 # Build frontend
 print_status "Building frontend application..."
