@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 // Database file path
-const dbPath = path.join(__dirname, '../data/workflow.db');
+const dbPath = path.join(__dirname, '../data/smartuniit_taskflow.db');
 
 // Create database connection
 const db = new sqlite3.Database(dbPath, (err) => {
