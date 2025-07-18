@@ -86,28 +86,37 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login attempt:', req.body);
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Get user from database
+    console.log('Looking for user:', email);
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
+    console.log('User found:', user ? 'yes' : 'no');
     
     if (!user) {
+      console.log('User not found');
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Check if user is active
     if (user.status !== 'active') {
+      console.log('User inactive');
       return res.status(401).json({ error: 'Account is inactive' });
     }
 
     // Verify password
+    console.log('Verifying password...');
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log('Password valid:', isValidPassword);
     if (!isValidPassword) {
+      console.log('Invalid password');
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
