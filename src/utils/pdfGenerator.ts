@@ -36,8 +36,8 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   
   console.log('PDF Generator - Customer data:', customer);
 
-  // Updated Smart Universe logo to match the attached design
-  const LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSJ3aGl0ZSIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjMwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjQiLz4KPHRleHQgeD0iNjAiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjRkY2QjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TTUFSVDwvdGV4dD4KPHRleHQgeD0iNjAiIHk9IjQ1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMUU0MEFGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5VTklWRVJTRTwvdGV4dD4KPHRleHQgeD0iNjAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iOCIgZmlsbD0iI0ZGNkIwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Rk9SIENPTU1VTklDQVRJT05TIEFORCBJTkZPUk1BVElPTiBURUNITk9MT0dZPC90ZXh0Pgo8bGluZSB4MT0iMzAiIHkxPSI2NSIgeDI9IjQwIiB5Mj0iNjUiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxsaW5lIHgxPSI4MCIgeTE9IjY1IiB4Mj0iOTAiIHkyPSI2NSIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+';
+  // Updated Smart Universe logo to exactly match the attached design
+  const LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSJ3aGl0ZSIvPgo8dGV4dCB4PSI2MCIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNNQVJUPC90ZXh0Pgo8dGV4dCB4PSI2MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxRTQwQUYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlVOSVZFUlNFPC90ZXh0Pgo8bGluZSB4MT0iMjAiIHkxPSI2MCIgeDI9IjMwIiB5Mj0iNjAiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjx0ZXh0IHg9IjYwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkZPUiBDT01NVU5JQ0FUSU9OUyBBTkQgSU5GT1JNQVRJT04gVEVDSE5PTE9HWTwvdGV4dD4KPGxpbmUgeDE9IjkwIiB5MT0iNjAiIHgyPSIxMDAiIHkyPSI2MCIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjEiLz4KPGNpcmNsZSBjeD0iOTAiIGN5PSIzMCIgcj0iNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIzIi8+Cjwvc3ZnPg==';
 
   // Generate the HTML content
   const htmlContent = `
@@ -69,7 +69,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           background: white;
           position: relative;
           min-height: 297mm;
-          padding-bottom: 250px; /* Increased padding for footer */
+          padding-bottom: 180px; /* Reduced padding for footer */
         }
         .header {
           display: flex;
@@ -109,7 +109,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           margin-bottom: 5px;
         }
         .company-name-ar {
-          font-size: 22px;
+          font-size: 24px;
           font-weight: bold;
           color: #1E40AF;
           margin-bottom: 5px;
@@ -119,8 +119,9 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           overflow: visible;
           text-overflow: clip;
           max-width: none;
-          line-height: 1.2;
-          letter-spacing: 1px;
+          line-height: 1.4;
+          letter-spacing: 0px;
+          padding-top: 5px;
         }
         .company-details {
           font-size: 12px;
@@ -242,20 +243,20 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           right: 0;
           background: #1E40AF;
           color: white;
-          padding: 20px;
+          padding: 15px;
           font-size: 11px;
           text-align: center;
           width: 100%;
           box-sizing: border-box;
           z-index: 1000;
-          min-height: 140px;
+          min-height: 80px;
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
         }
         .page-number {
           position: absolute;
-          bottom: 60px;
+          bottom: 40px;
           right: 20px;
           font-size: 12px;
           color: white;
@@ -268,10 +269,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
         .riyal-symbol {
           font-family: 'Noto Sans Arabic', sans-serif;
           font-weight: bold;
-          font-size: 14px;
+          font-size: 12px;
         }
         .contact-info {
-          margin-top: 10px;
+          margin-top: 5px;
           font-size: 10px;
           line-height: 1.4;
         }
