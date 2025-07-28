@@ -12,8 +12,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   // Calculate totals properly
   const lineItems = quote.lineItems || [];
   const subtotal = lineItems.reduce((sum: number, item: any) => {
-    const itemTotal = item.total || (item.quantity * item.unitPrice) || 0;
-    console.log('Item calculation:', { item, itemTotal });
+    const quantity = item.quantity || 0;
+    const unitPrice = item.unitPrice || 0;
+    const itemTotal = item.total || (quantity * unitPrice) || 0;
+    console.log('Item calculation:', { item, quantity, unitPrice, itemTotal });
     return sum + itemTotal;
   }, 0);
   const vatRate = 15; // 15% VAT
@@ -69,7 +71,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           background: white;
           position: relative;
           min-height: 297mm;
-          padding-bottom: 200px; /* Increased padding for footer */
+          padding-bottom: 220px; /* Increased padding for footer */
         }
         .header {
           display: flex;
@@ -250,14 +252,14 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           width: 100%;
           box-sizing: border-box;
           z-index: 1000;
-          min-height: 120px;
+          min-height: 140px;
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
         }
         .page-number {
           position: absolute;
-          bottom: 50px;
+          bottom: 60px;
           right: 20px;
           font-size: 12px;
           color: white;
@@ -281,6 +283,12 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
+        }
+        .arabic-terms {
+          direction: rtl;
+          text-align: right;
+          font-family: 'Noto Sans Arabic', sans-serif;
+          margin-top: 15px;
         }
       </style>
     </head>
@@ -342,15 +350,20 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
               </tr>
             </thead>
             <tbody>
-              ${lineItems.map((item: any, index: number) => `
+              ${lineItems.map((item: any, index: number) => {
+                const quantity = item.quantity || 0;
+                const unitPrice = item.unitPrice || 0;
+                const itemTotal = item.total || (quantity * unitPrice) || 0;
+                return `
                 <tr>
                   <td>${index + 1}</td>
                   <td>${item.name || item.description || 'Item'}</td>
-                  <td>${item.quantity || 0} pcs</td>
-                  <td>${(item.unitPrice || 0).toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
-                  <td>${(item.total || 0).toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+                  <td>${quantity} pcs</td>
+                  <td>${unitPrice.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+                  <td>${itemTotal.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
                 </tr>
-              `).join('')}
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -383,8 +396,8 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
                 `<div>• ${customTerms}</div>`}
             </div>
             ${quote.termsAr ? `
-            <div class="terms-title" style="margin-top: 20px; direction: rtl; text-align: right;">الشروط والأحكام:</div>
-            <div class="terms-list" style="direction: rtl; text-align: right; font-family: 'Noto Sans Arabic', sans-serif;">
+            <div class="terms-title arabic-terms">الشروط والأحكام:</div>
+            <div class="terms-list arabic-terms">
               ${quote.termsAr.split('\n').map((term: string) => `<div>• ${term}</div>`).join('')}
             </div>
             ` : ''}
