@@ -1,5 +1,5 @@
-// Set API base URL to production domain for deployed app
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://work.smartuniit.com/api';
+// Set API base URL for development
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
 
 class ApiService {
   private baseUrl: string;

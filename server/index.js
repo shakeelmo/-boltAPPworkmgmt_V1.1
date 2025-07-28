@@ -50,8 +50,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Serve frontend
-app.get('*', (req, res) => {
+// Serve frontend only for non-API routes
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Serve frontend for all other routes
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

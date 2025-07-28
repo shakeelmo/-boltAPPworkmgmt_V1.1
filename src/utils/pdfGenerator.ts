@@ -1,296 +1,511 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { Quote, QuotationSettings } from '../types/quotation';
-import { Customer } from '../types';
-import { format } from 'date-fns';
+import '@abdulrysr/saudi-riyal-new-symbol-font';
 
-export class PDFGenerator {
-  private static instance: PDFGenerator;
+// Saudi Riyal symbol - using the correct Unicode character
+const SAR_SYMBOL = '﷼';
+
+export async function generateQuotationPDF(quote: any, settings: any = {}) {
+  console.log('PDF Generator - Input quote:', quote);
+  console.log('PDF Generator - Input settings:', settings);
   
-  public static getInstance(): PDFGenerator {
-    if (!PDFGenerator.instance) {
-      PDFGenerator.instance = new PDFGenerator();
-    }
-    return PDFGenerator.instance;
-  }
+  // Calculate totals properly
+  const lineItems = quote.lineItems || [];
+  const subtotal = lineItems.reduce((sum: number, item: any) => {
+    const itemTotal = item.total || (item.quantity * item.unitPrice) || 0;
+    console.log('Item calculation:', { item, itemTotal });
+    return sum + itemTotal;
+  }, 0);
+  const vatRate = 15; // 15% VAT
+  const vatAmount = (subtotal * vatRate) / 100;
+  const total = subtotal + vatAmount;
+  
+  console.log('PDF Generator - Calculated totals:', { subtotal, vatAmount, total, lineItemsCount: lineItems.length });
 
-  public async generateQuotePDF(
-    quote: Quote, 
-    customer: Customer, 
-    settings: QuotationSettings | null
-  ): Promise<Blob> {
-    if (!settings) {
-      throw new Error('Settings are required to generate PDF');
-    }
-    
-    // Create a temporary container for the PDF content
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    container.style.width = '210mm'; // A4 width
-    container.style.backgroundColor = 'white';
-    container.style.fontFamily = 'Arial, sans-serif';
-    container.style.fontSize = '12px';
-    container.style.lineHeight = '1.4';
-    container.style.color = '#000';
-    
-    // Generate the HTML content
-    container.innerHTML = this.generateHTMLContent(quote, customer, settings);
-    
-    // Append to body temporarily
-    document.body.appendChild(container);
-    
-    try {
-      // Convert HTML to canvas
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 794, // A4 width in pixels at 96 DPI
-        height: 1123, // A4 height in pixels at 96 DPI
-      });
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Calculate dimensions
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-      
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      
-      // Return as blob
-      return pdf.output('blob');
-    } finally {
-      // Clean up
-      document.body.removeChild(container);
-    }
-  }
+  // Custom terms and conditions
+  const customTerms = quote.terms || settings.defaultTerms || [
+    'Payment terms: 30 days from invoice date',
+    'All prices are in Saudi Riyals (SAR)',
+    'VAT is included in all prices',
+    'This quotation is valid for 30 days',
+    'Delivery will be made within 7-14 business days'
+  ];
 
-  public async downloadQuotePDF(
-    quote: Quote, 
-    customer: Customer, 
-    settings: QuotationSettings | null
-  ): Promise<void> {
-    if (!settings) {
-      throw new Error('Settings are required to generate PDF');
-    }
-    
-    const blob = await this.generateQuotePDF(quote, customer, settings);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${quote.quoteNumber}_${(customer.company || 'Unknown').replace(/\s+/g, '_')}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
+  // Get customer data - handle both quote.customer and separate customer object
+  const customer = quote.customer || quote;
+  
+  console.log('PDF Generator - Customer data:', customer);
 
-  private generateHTMLContent(
-    quote: Quote, 
-    customer: Customer, 
-    settings: QuotationSettings
-  ): string {
-    const statusLabels = {
-      draft: 'Draft / مسودة',
-      sent: 'Sent / مرسل',
-      approved: 'Approved / موافق عليه',
-      rejected: 'Rejected / مرفوض',
-    };
+  // Updated Smart Universe logo to match the attached design
+  const LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSJ3aGl0ZSIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjMwIiByPSI0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjQiLz4KPHRleHQgeD0iNjAiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjRkY2QjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TTUFSVDwvdGV4dD4KPHRleHQgeD0iNjAiIHk9IjQ1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMUU0MEFGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5VTklWRVJTRTwvdGV4dD4KPHRleHQgeD0iNjAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iOCIgZmlsbD0iI0ZGNkIwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Rk9SIENPTU1VTklDQVRJT05TIEFORCBJTkZPUk1BVElPTiBURUNITk9MT0dZPC90ZXh0Pgo8bGluZSB4MT0iMzAiIHkxPSI2NSIgeDI9IjQwIiB5Mj0iNjUiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxsaW5lIHgxPSI4MCIgeTE9IjY1IiB4Mj0iOTAiIHkyPSI2NSIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+';
 
-    return `
-      <div style="padding: 20mm; font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #000;">
-        <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #f97316; padding-bottom: 20px;">
-          <div style="flex: 1;">
-            <div style="width: 120px; height: 60px; background: url('/smaruniit_logo.png') no-repeat center; background-size: contain; margin-bottom: 15px;"></div>
-            <div style="font-size: 11px; color: #666;">
-              <p style="font-weight: bold; font-size: 16px; color: #000; margin: 0 0 8px 0;">
-                ${settings.companyInfo.name}
-              </p>
-              <p style="margin: 0 0 4px 0; direction: rtl;">${settings.companyInfo.nameAr}</p>
-              <p style="margin: 0 0 4px 0;">${settings.companyInfo.address}</p>
-              <p style="margin: 0 0 4px 0; direction: rtl;">${settings.companyInfo.addressAr}</p>
-              <p style="margin: 0 0 4px 0;">Phone: ${settings.companyInfo.phone}</p>
-              <p style="margin: 0 0 4px 0;">Email: ${settings.companyInfo.email}</p>
-              <p style="margin: 0 0 4px 0;">CR: ${settings.companyInfo.crNumber}</p>
-              <p style="margin: 0;">VAT: ${settings.companyInfo.vatNumber}</p>
+  // Generate the HTML content
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap');
+        
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          color: #333;
+          line-height: 1.4;
+          position: relative;
+          min-height: 297mm;
+          font-size: 12px;
+        }
+        .container {
+          max-width: 210mm;
+          margin: 0 auto;
+          padding: 20px;
+          background: white;
+          position: relative;
+          min-height: 297mm;
+          padding-bottom: 250px; /* Increased padding for footer */
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #1E40AF;
+          padding-bottom: 20px;
+        }
+        .logo-section {
+          flex: 0 0 200px;
+        }
+        .logo {
+          width: 120px;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e0e0e0;
+          border-radius: 50%;
+          overflow: hidden;
+          background: white;
+        }
+        .logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .company-info {
+          flex: 1;
+          margin-left: 30px;
+        }
+        .company-name {
+          font-size: 24px;
+          font-weight: bold;
+          color: #1E40AF;
+          margin-bottom: 5px;
+        }
+        .company-name-ar {
+          font-size: 22px;
+          font-weight: bold;
+          color: #1E40AF;
+          margin-bottom: 5px;
+          direction: rtl;
+          font-family: 'Noto Sans Arabic', sans-serif;
+          white-space: nowrap;
+          overflow: visible;
+          text-overflow: clip;
+          max-width: none;
+          line-height: 1.2;
+          letter-spacing: 1px;
+        }
+        .company-details {
+          font-size: 12px;
+          color: #666;
+          line-height: 1.6;
+        }
+        .quote-info {
+          flex: 0 0 200px;
+          text-align: right;
+        }
+        .quote-title {
+          font-size: 28px;
+          font-weight: bold;
+          color: #1E40AF;
+          margin-bottom: 10px;
+        }
+        .quote-number {
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 5px;
+        }
+        .quote-date {
+          font-size: 12px;
+          color: #666;
+        }
+        .customer-section {
+          margin-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+        }
+        .customer-info {
+          flex: 1;
+        }
+        .section-title {
+          font-size: 16px;
+          font-weight: bold;
+          color: #1E40AF;
+          margin-bottom: 10px;
+          border-bottom: 1px solid #e0e0e0;
+          padding-bottom: 5px;
+        }
+        .customer-details {
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .items-section {
+          margin-bottom: 30px;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        .items-table th {
+          background: #1E40AF;
+          color: white;
+          padding: 12px 8px;
+          text-align: left;
+          font-weight: bold;
+          font-size: 12px;
+        }
+        .items-table td {
+          padding: 10px 8px;
+          border-bottom: 1px solid #e0e0e0;
+          font-size: 12px;
+        }
+        .items-table tr:nth-child(even) {
+          background: #f9f9f9;
+        }
+        .totals-section {
+          margin-bottom: 30px;
+        }
+        .totals-table {
+          width: 300px;
+          margin-left: auto;
+          border-collapse: collapse;
+        }
+        .totals-table td {
+          padding: 8px 12px;
+          border-bottom: 1px solid #e0e0e0;
+          font-size: 12px;
+        }
+        .totals-table .total-row {
+          font-weight: bold;
+          font-size: 14px;
+          background: #1E40AF;
+          color: white;
+        }
+        .terms-section {
+          margin-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+        }
+        .terms-left {
+          flex: 1;
+          margin-right: 20px;
+        }
+        .banking-right {
+          flex: 1;
+        }
+        .terms-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #1E40AF;
+          margin-bottom: 10px;
+        }
+        .terms-list {
+          font-size: 11px;
+          line-height: 1.4;
+          color: #666;
+        }
+        .terms-list li {
+          margin-bottom: 5px;
+        }
+        .footer {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #1E40AF;
+          color: white;
+          padding: 20px;
+          font-size: 11px;
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+          z-index: 1000;
+          min-height: 140px;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+        .page-number {
+          position: absolute;
+          bottom: 60px;
+          right: 20px;
+          font-size: 12px;
+          color: white;
+          z-index: 1001;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          font-weight: bold;
+        }
+        .riyal-symbol {
+          font-family: 'Noto Sans Arabic', sans-serif;
+          font-weight: bold;
+          font-size: 14px;
+        }
+        .contact-info {
+          margin-top: 10px;
+          font-size: 10px;
+          line-height: 1.4;
+        }
+        .footer-content {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <!-- Header with Logo and Company Info -->
+        <div class="header">
+          <div class="logo-section">
+            <div class="logo">
+              <img src="${LOGO_BASE64}" alt="Smart Universe Logo" />
             </div>
           </div>
-          <div style="text-align: right;">
-            <h1 style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0 0 8px 0;">QUOTATION</h1>
-            <h2 style="font-size: 24px; font-weight: bold; color: #f97316; margin: 0 0 20px 0; direction: rtl;">عرض سعر</h2>
-            <div style="font-size: 11px; color: #666;">
-              <p style="margin: 0 0 4px 0;"><strong>Quote #:</strong> ${quote.quoteNumber || 'DRAFT'}</p>
-              <p style="margin: 0 0 4px 0;"><strong>Date:</strong> ${format(quote.createdAt, 'dd/MM/yyyy')}</p>
-              <p style="margin: 0 0 4px 0;"><strong>Valid Until:</strong> ${format(quote.validUntil, 'dd/MM/yyyy')}</p>
-              <p style="margin: 0;"><strong>Status:</strong> ${statusLabels[quote.status]}</p>
+          <div class="company-info">
+            <div class="company-name">SMART UNIVERSE</div>
+            <div class="company-name-ar">الكون الذكي</div>
+            <div class="company-details">
+              FOR COMMUNICATIONS AND INFORMATION TECHNOLOGY<br>
+              Riyadh, Saudi Arabia<br>
+              Phone: +966 11 123 4567<br>
+              Email: info@smartuniit.com<br>
+              CR: 1234567890 | VAT: 300123456789
+            </div>
+          </div>
+          <div class="quote-info">
+            <div class="quote-title">QUOTATION</div>
+            <div class="quote-number">Quote #: ${quote.quote_number || quote.quoteNumber || 'N/A'}</div>
+            <div class="quote-date">Date: ${new Date(quote.created_at || quote.createdAt || Date.now()).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</div>
+          </div>
+        </div>
+
+        <!-- Customer Section -->
+        <div class="customer-section">
+          <div class="customer-info">
+            <div class="section-title">Bill To:</div>
+            <div class="customer-details">
+              ${customer.name || 'Customer Name'}<br>
+              ${customer.address || 'Customer Address'}<br>
+              Phone: ${customer.phone || 'N/A'}<br>
+              Email: ${customer.email || 'N/A'}
             </div>
           </div>
         </div>
 
-        <!-- Customer Details -->
-        <div style="margin-bottom: 30px;">
-          <h3 style="font-size: 16px; font-weight: bold; color: #000; margin: 0 0 12px 0; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
-            Bill To
-          </h3>
-          <div style="font-size: 11px; color: #666;">
-            <p style="font-weight: bold; color: #000; margin: 0 0 4px 0;">${customer.company ? customer.company : (customer.name ? customer.name : 'Customer')}</p>
-            <p style="margin: 0 0 4px 0;">${customer.name || ''}</p>
-            <p style="margin: 0 0 4px 0;">${customer.email || ''}</p>
-            <p style="margin: 0 0 4px 0;">${customer.phone || ''}</p>
-            ${customer.address ? `<p style="margin: 0 0 4px 0;">${customer.address}</p>` : ''}
-          </div>
-        </div>
-
-        <!-- Line Items Table -->
-        <div style="margin-bottom: 30px;">
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+        <!-- Items Section -->
+        <div class="items-section">
+          <div class="section-title">Items & Services</div>
+          <table class="items-table">
             <thead>
-              <tr style="background-color: #fef3e2;">
-                <th style="border: 1px solid #ccc; padding: 12px 8px; text-align: left; font-size: 11px; font-weight: bold;">
-                  Description
-                </th>
-                <th style="border: 1px solid #ccc; padding: 12px 8px; text-align: center; font-size: 11px; font-weight: bold;">
-                  Qty
-                </th>
-                <th style="border: 1px solid #ccc; padding: 12px 8px; text-align: right; font-size: 11px; font-weight: bold;">
-                  Unit Price (SAR)
-                </th>
-                <th style="border: 1px solid #ccc; padding: 12px 8px; text-align: right; font-size: 11px; font-weight: bold;">
-                  Total (SAR)
-                </th>
+              <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
-              ${quote.lineItems.map((item, index) => `
-                <tr style="background-color: ${index % 2 === 0 ? '#f9f9f9' : '#fff'};">
-                  <td style="border: 1px solid #ccc; padding: 12px 8px; font-size: 10px; vertical-align: top;">
-                    <div>
-                      <p style="font-weight: bold; color: #000; margin: 0 0 4px 0;">${item.name}</p>
-                      ${item.nameAr ? `<p style="color: #666; font-size: 9px; margin: 0 0 4px 0; direction: rtl;">${item.nameAr}</p>` : ''}
-                      <p style="color: #666; font-size: 9px; margin: 0 0 4px 0;">${item.description}</p>
-                      ${item.descriptionAr ? `<p style="color: #666; font-size: 9px; margin: 0; direction: rtl;">${item.descriptionAr}</p>` : ''}
-                    </div>
-                  </td>
-                  <td style="border: 1px solid #ccc; padding: 12px 8px; text-align: center; font-size: 10px;">
-                    ${item.quantity}
-                  </td>
-                  <td style="border: 1px solid #ccc; padding: 12px 8px; text-align: right; font-size: 10px;">
-                    ${(item.unitPrice || 0).toLocaleString()}
-                  </td>
-                  <td style="border: 1px solid #ccc; padding: 12px 8px; text-align: right; font-size: 10px; font-weight: bold;">
-                    ${(item.total || 0).toLocaleString()}
-                  </td>
+              ${lineItems.map((item: any, index: number) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${item.name || item.description || 'Item'}</td>
+                  <td>${item.quantity || 0} pcs</td>
+                  <td>${(item.unitPrice || 0).toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+                  <td>${(item.total || 0).toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
 
-        <!-- Totals -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-          <div style="width: 300px;">
-            <div style="background-color: #f9f9f9; padding: 16px; border-radius: 8px; border: 1px solid #e5e5e5;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 11px; color: #666;">Subtotal:</span>
-                <div style="display: flex; align-items: center;">
-                  <img src="/Riyal_symbol.png" alt="SAR" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;" />
-                  <span style="font-size: 11px; font-weight: bold;">${Number(quote.subtotal || 0).toLocaleString()}</span>
-                </div>
-              </div>
-              ${(quote.discountAmount && quote.discountAmount > 0) ? `
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 11px; color: #666;">Discount ${quote.discountType === 'percentage' ? `(${quote.discountValue}%)` : '(Fixed)'}:</span>
-                <div style="display: flex; align-items: center;">
-                  <span style="font-size: 11px; font-weight: bold; color: #059669;">-<img src="/Riyal_symbol.png" alt="SAR" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;" />
-                  ${Number(quote.discountAmount || 0).toLocaleString()}</span>
-                </div>
-              </div>
-              ` : ''}
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 11px; color: #666;">VAT (${quote.vatRate || 15}%):</span>
-                <div style="display: flex; align-items: center;">
-                  <img src="/Riyal_symbol.png" alt="SAR" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;" />
-                  <span style="font-size: 11px; font-weight: bold;">${Number(quote.vatAmount || 0).toLocaleString()}</span>
-                </div>
-              </div>
-              <div style="border-top: 1px solid #ccc; padding-top: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 14px; font-weight: bold; color: #000;">Total:</span>
-                  <div style="display: flex; align-items: center;">
-                    <img src="/Riyal_symbol.png" alt="SAR" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 4px;" />
-                    <span style="font-size: 14px; font-weight: bold; color: #f97316;">${Number(quote.total || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
+        <!-- Totals Section -->
+        <div class="totals-section">
+          <table class="totals-table">
+            <tr>
+              <td>المجموع الفرعي / Subtotal</td>
+              <td>${subtotal.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+            </tr>
+            <tr>
+              <td>ضريبة القيمة المضافة / VAT (${vatRate}%)</td>
+              <td>${vatAmount.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+            </tr>
+            <tr class="total-row">
+              <td>المجموع الكلي / Total</td>
+              <td>${total.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Terms and Banking Details -->
+        <div class="terms-section">
+          <div class="terms-left">
+            <div class="terms-title">Terms & Conditions / الشروط والأحكام:</div>
+            <div class="terms-list">
+              ${quote.terms ? quote.terms.split('\n').map((term: string) => `<div>• ${term}</div>`).join('') : 
+                Array.isArray(customTerms) ? customTerms.map((term: string) => `<div>• ${term}</div>`).join('') : 
+                `<div>• ${customTerms}</div>`}
+            </div>
+            ${quote.termsAr ? `
+            <div class="terms-title" style="margin-top: 20px; direction: rtl; text-align: right;">الشروط والأحكام:</div>
+            <div class="terms-list" style="direction: rtl; text-align: right; font-family: 'Noto Sans Arabic', sans-serif;">
+              ${quote.termsAr.split('\n').map((term: string) => `<div>• ${term}</div>`).join('')}
+            </div>
+            ` : ''}
+          </div>
+          <div class="banking-right">
+            <div class="terms-title">Banking Details:</div>
+            <div class="terms-list">
+              <strong>Bank Name:</strong> Saudi National Bank<br>
+              <strong>Account Name:</strong> Smart Universe<br>
+              <strong>IBAN:</strong> SA03 8000 0000 6080 1016 7519<br>
+              <strong>Swift Code:</strong> SNBASAJE<br>
+              <strong>Branch:</strong> Riyadh Main Branch
             </div>
           </div>
         </div>
-
-        <!-- Notes -->
-        ${(quote.notes || quote.notesAr) ? `
-          <div style="margin-bottom: 30px;">
-            <h3 style="font-size: 16px; font-weight: bold; color: #000; margin: 0 0 12px 0; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
-              Terms & Conditions
-            </h3>
-            ${quote.notes ? `
-              <div style="margin-bottom: 16px;">
-                <p style="font-size: 10px; color: #666; white-space: pre-wrap; margin: 0;">${quote.notes}</p>
-              </div>
-            ` : ''}
-            ${quote.notesAr ? `
-              <div style="margin-bottom: 16px; direction: rtl;">
-                <p style="font-size: 10px; color: #666; white-space: pre-wrap; margin: 0;">${quote.notesAr}</p>
-              </div>
-            ` : ''}
-          </div>
-        ` : ''}
 
         <!-- Footer -->
-        <div style="border-top: 1px solid #ccc; padding-top: 20px; margin-top: 30px;">
-          <div style="display: flex; justify-content: space-between;">
-            <div style="flex: 1; margin-right: 30px;">
-              <h4 style="font-weight: bold; color: #000; margin: 0 0 8px 0; font-size: 12px;">Acceptance</h4>
-              <p style="font-size: 9px; color: #666; margin: 0 0 16px 0;">
-                By signing below, you agree to the terms and conditions of this quotation.
-              </p>
-              <div style="border-top: 1px solid #ccc; padding-top: 8px;">
-                <p style="font-size: 9px; color: #666; margin: 0;">Customer Signature & Date</p>
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <h4 style="font-weight: bold; color: #000; margin: 0 0 8px 0; font-size: 12px;">Company Stamp</h4>
-              <div style="height: 60px; width: 120px; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 9px; color: #999;">Company Seal</span>
-              </div>
-            </div>
+        <div class="footer footer-content">
+          <div class="contact-info">
+            <strong>Smart Universe</strong> | For Communications and Information Technology<br>
+            Riyadh, Saudi Arabia | Phone: +966 11 123 4567 | Email: info@smartuniit.com<br>
+            CR: 1234567890 | VAT: 300123456789
           </div>
+          <div class="page-number">Page 1</div>
         </div>
-        
-        <!-- Banking Details -->
-        ${settings.companyInfo.bankingDetails ? `
-          <div style="border-top: 1px solid #ccc; padding-top: 20px; margin-top: 20px;">
-            <h4 style="font-weight: bold; color: #000; margin: 0 0 12px 0; font-size: 12px;">Banking Details</h4>
-            <div style="font-size: 10px; color: #666;">
-              <p style="margin: 0 0 4px 0;"><strong>Bank Name:</strong> ${settings.companyInfo.bankingDetails.bankName}</p>
-              <p style="margin: 0 0 4px 0;"><strong>IBAN:</strong> ${settings.companyInfo.bankingDetails.iban}</p>
-              <p style="margin: 0;"><strong>Account Number:</strong> ${settings.companyInfo.bankingDetails.accountNumber}</p>
-            </div>
-          </div>
-        ` : ''}
       </div>
-    `;
+    </body>
+    </html>
+  `;
+
+  console.log('PDF Generator - Generated HTML content length:', htmlContent.length);
+
+  try {
+    // Create a temporary div to render the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '210mm';
+    tempDiv.style.height = '297mm';
+    tempDiv.style.backgroundColor = 'white';
+    document.body.appendChild(tempDiv);
+
+    // Wait for images to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Convert to canvas
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 794, // A4 width in pixels at 96 DPI
+      height: 1123, // A4 height in pixels at 96 DPI
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    // Remove temporary div
+    document.body.removeChild(tempDiv);
+
+    // Convert canvas to image data
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+    // Create PDF using jsPDF
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // Add image to PDF
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+    // Return as blob
+    const blob = pdf.output('blob');
+    console.log('PDF Generator - Successfully generated PDF blob:', blob);
+    return blob;
+  } catch (error) {
+    console.error('PDF Generator - Error generating PDF:', error);
+    throw error;
   }
 }
 
-export const pdfGenerator = PDFGenerator.getInstance();
+// Test function to verify PDF generation
+export async function testPDFGeneration() {
+  const testQuote = {
+    id: 'test-quote-123',
+    quote_number: 'Q-TEST-001',
+    customer: {
+      name: 'Test Customer Company',
+      address: '123 Test Street, Riyadh, Saudi Arabia',
+      phone: '+966 50 123 4567',
+      email: 'test@example.com'
+    },
+    lineItems: [
+      {
+        name: 'Web Development Services',
+        quantity: 2,
+        unitPrice: 5000,
+        total: 10000
+      },
+      {
+        name: 'Mobile App Development',
+        quantity: 1,
+        unitPrice: 15000,
+        total: 15000
+      },
+      {
+        name: 'UI/UX Design',
+        quantity: 3,
+        unitPrice: 2000,
+        total: 6000
+      }
+    ],
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    const blob = await generateQuotationPDF(testQuote);
+    console.log('PDF Generation Test - Success:', blob);
+    return blob;
+  } catch (error) {
+    console.error('PDF Generation Test - Error:', error);
+    throw error;
+  }
+}

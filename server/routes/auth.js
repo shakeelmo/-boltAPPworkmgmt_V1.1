@@ -31,12 +31,12 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user - fixed column names to match database schema
     const userId = Date.now().toString();
     await run(
-      `INSERT INTO users (id, email, name, role, password_hash, department, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, email, name, 'customer', hashedPassword, company, 'active']
+      `INSERT INTO users (id, email, name, role, password, status) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, email, name, 'admin', hashedPassword, 'active']
     );
 
     // Generate JWT token
@@ -69,9 +69,6 @@ router.post('/register', async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        avatar: user.avatar_url,
-        phone: user.phone,
-        department: user.department,
         status: user.status,
         createdAt: user.created_at,
         updatedAt: user.updated_at
@@ -100,19 +97,28 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check if user is active
-    if (user.status !== 'active') {
-      return res.status(401).json({ error: 'Account is inactive' });
-    }
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    // Check password - fixed to use correct column name
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Check if user is active
+    if (user.status !== 'active') {
+      return res.status(401).json({ error: 'Account is not active' });
+    }
+
     // Generate JWT token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        email: user.email,
+        role: user.role 
+      }, 
+      JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
 
     res.json({
       message: 'Login successful',
@@ -122,9 +128,6 @@ router.post('/login', async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        avatar: user.avatar_url,
-        phone: user.phone,
-        department: user.department,
         status: user.status,
         createdAt: user.created_at,
         updatedAt: user.updated_at
@@ -246,6 +249,49 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 // Logout (client-side token removal)
 router.post('/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logged out successfully' });
+});
+
+// Create user with custom credentials
+router.post('/create-user', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { get, run } = require('../db');
+    
+    const { email, password, name, role = 'user' } = req.body;
+    
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await get('SELECT * FROM users WHERE email = ?', [email]);
+    
+    if (existingUser) {
+      return res.json({ message: 'User already exists', user: existingUser });
+    }
+    
+    // Create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = 'user-' + Date.now();
+    
+    await run(
+      `INSERT INTO users (id, name, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, name, email, hashedPassword, role, 'active']
+    );
+    
+    res.json({ 
+      message: 'User created successfully',
+      user: {
+        id: userId,
+        email: email,
+        name: name,
+        role: role
+      }
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router; 

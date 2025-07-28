@@ -27,8 +27,11 @@ export interface Quote {
   vatAmount: number;
   total: number;
   validUntil: Date;
+  currency?: string;
   notes?: string;
   notesAr?: string;
+  terms?: string;
+  termsAr?: string;
   assignedTo?: string;
   signatureUrl?: string;
   stampUrl?: string;

@@ -5,7 +5,7 @@ import { Customer } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuotations } from '../../hooks/useQuotations';
 import { formatCurrency } from '../../utils/format';
-import { pdfGenerator } from '../../utils/pdfGenerator';
+import { generateQuotationPDF } from '../../utils/pdfGenerator';
 
 interface CreateQuoteModalProps {
   isOpen: boolean;
@@ -33,6 +33,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
     validUntil: '',
     notes: '',
     notesAr: '',
+    terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (SAR)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
+    termsAr: 'شروط الدفع: 30 يوم من تاريخ الفاتورة\nجميع الأسعار بالريال السعودي\nضريبة القيمة المضافة مشمولة في جميع الأسعار\nهذا العرض صالح لمدة 30 يوم\nسيتم التسليم خلال 7-14 يوم عمل',
     assignedTo: user?.id || '',
     discountType: 'percentage' as 'percentage' | 'fixed',
     discountValue: 0,
@@ -58,6 +60,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         validUntil: editQuote.validUntil.toISOString().split('T')[0],
         notes: editQuote.notes || '',
         notesAr: editQuote.notesAr || '',
+        terms: editQuote.terms || '',
+        termsAr: editQuote.termsAr || '',
         assignedTo: editQuote.assignedTo || user?.id || '',
         discountType: editQuote.discountType || 'percentage',
         discountValue: editQuote.discountValue || 0,
@@ -74,6 +78,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         validUntil: defaultValidUntil.toISOString().split('T')[0],
         notes: '',
         notesAr: '',
+        terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (SAR)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
+        termsAr: 'شروط الدفع: 30 يوم من تاريخ الفاتورة\nجميع الأسعار بالريال السعودي\nضريبة القيمة المضافة مشمولة في جميع الأسعار\nهذا العرض صالح لمدة 30 يوم\nسيتم التسليم خلال 7-14 يوم عمل',
         assignedTo: user?.id || '',
         discountType: 'percentage',
         discountValue: 0,
@@ -189,6 +195,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
       validUntil: new Date(formData.validUntil),
       notes: formData.notes,
       notesAr: formData.notesAr,
+      terms: formData.terms,
+      termsAr: formData.termsAr,
       assignedTo: formData.assignedTo,
       createdBy: user?.id || '',
     };
@@ -235,12 +243,14 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
       validUntil: new Date(formData.validUntil),
       notes: formData.notes,
       notesAr: formData.notesAr,
+      terms: formData.terms,
+      termsAr: formData.termsAr,
       assignedTo: formData.assignedTo,
       createdBy: user?.id || '',
       createdAt: editQuote?.createdAt || new Date(),
       updatedAt: new Date(),
     };
-    await pdfGenerator.downloadQuotePDF(quoteData, customer, settings || {
+    const pdfBlob = await generateQuotationPDF(quoteData, settings || {
       vatRate: 15,
       companyInfo: {
         name: 'Smart Universe Communication and Information Technology',
@@ -258,6 +268,14 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         },
       },
     });
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `quotation-${quoteData.quoteNumber || quoteData.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const { subtotal, vatAmount, total } = calculateTotals();
@@ -577,6 +595,35 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 rows={3}
                 placeholder="ملاحظات أو شروط إضافية"
+                dir="rtl"
+              />
+            </div>
+          </div>
+
+          {/* Terms & Conditions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-2">
+                Terms & Conditions (English)
+              </label>
+              <textarea
+                value={formData.terms}
+                onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={3}
+                placeholder="Terms and conditions for this quote"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-2">
+                Terms & Conditions (Arabic) / الشروط والأحكام
+              </label>
+              <textarea
+                value={formData.termsAr}
+                onChange={(e) => setFormData(prev => ({ ...prev, termsAr: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={3}
+                placeholder="الشروط والأحكام لهذا العرض"
                 dir="rtl"
               />
             </div>

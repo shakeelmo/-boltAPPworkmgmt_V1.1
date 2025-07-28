@@ -57,11 +57,10 @@ router.get('/', authenticateToken, requirePermission('quotations', 'read'), asyn
       params.push(status);
     }
     
-    // Get quotations with pagination
+    // Get quotations with pagination - removed proposal references
     const quotations = await all(
-      `SELECT q.*, p.title as proposal_title, u.name as created_by_name 
+      `SELECT q.*, u.name as created_by_name 
        FROM quotations q 
-       LEFT JOIN proposals p ON q.proposal_id = p.id 
        LEFT JOIN users u ON q.created_by = u.id 
        ${whereClause} 
        ORDER BY q.created_at DESC 
@@ -107,9 +106,8 @@ router.get('/:id', authenticateToken, requirePermission('quotations', 'read'), a
     const { id } = req.params;
     
     const quotation = await get(
-      `SELECT q.*, p.title as proposal_title, u.name as created_by_name 
+      `SELECT q.*, u.name as created_by_name 
        FROM quotations q 
-       LEFT JOIN proposals p ON q.proposal_id = p.id 
        LEFT JOIN users u ON q.created_by = u.id 
        WHERE q.id = ?`,
       [id]
@@ -137,15 +135,16 @@ router.get('/:id', authenticateToken, requirePermission('quotations', 'read'), a
 // Create new quotation
 router.post('/', authenticateToken, requirePermission('quotations', 'create'), async (req, res) => {
   try {
-    const { proposal_id, amount, currency, valid_until, terms, lineItems, customer_id } = req.body;
+    const { amount, total_amount, currency, valid_until, terms, lineItems, customer_id } = req.body;
     
     // Validate required fields
-    if (!amount || amount === undefined || amount === null) {
+    const finalAmount = amount || total_amount;
+    if (!finalAmount || finalAmount === undefined || finalAmount === null) {
       return res.status(400).json({ error: 'Amount is required' });
     }
     
     // Ensure amount is a valid number
-    const numericAmount = parseFloat(amount);
+    const numericAmount = parseFloat(finalAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       return res.status(400).json({ error: 'Amount must be a valid positive number' });
     }
@@ -153,10 +152,11 @@ router.post('/', authenticateToken, requirePermission('quotations', 'create'), a
     const quotationId = Date.now().toString();
     const quoteNumber = await generateQuoteNumber();
     
+    // Removed proposal_id from INSERT
     await run(
-      `INSERT INTO quotations (id, quote_number, proposal_id, amount, currency, valid_until, terms, created_by, customer_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [quotationId, quoteNumber, proposal_id || null, numericAmount, currency || 'SAR', valid_until, terms, req.user.id, customer_id || null]
+      `INSERT INTO quotations (id, quote_number, total_amount, currency, valid_until, notes, created_by, customer_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [quotationId, quoteNumber, numericAmount, currency || 'SAR', valid_until, terms, req.user.id, customer_id || null]
     );
     
     // Insert line items if provided
@@ -164,7 +164,7 @@ router.post('/', authenticateToken, requirePermission('quotations', 'create'), a
       for (const item of lineItems) {
         const itemId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
         await run(
-          `INSERT INTO quotation_line_items (id, quotation_id, description, quantity, unit_price, total) 
+          `INSERT INTO quotation_line_items (id, quotation_id, description, quantity, unit_price, total_price) 
            VALUES (?, ?, ?, ?, ?, ?)`,
           [itemId, quotationId, item.description, item.quantity, item.unitPrice, item.total]
         );
@@ -179,7 +179,10 @@ router.post('/', authenticateToken, requirePermission('quotations', 'create'), a
     });
   } catch (error) {
     console.error('Create quotation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error && error.stack) {
+      console.error('Error stack:', error.stack);
+    }
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -273,6 +276,63 @@ router.delete('/:id', authenticateToken, requirePermission('quotations', 'delete
     res.json({ message: 'Quotation deleted successfully' });
   } catch (error) {
     console.error('Delete quotation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Generate PDF for quotation
+router.get('/:id/pdf', authenticateToken, requirePermission('quotations', 'read'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get quotation with line items
+    const quotation = await get('SELECT * FROM quotations WHERE id = ?', [id]);
+    if (!quotation) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+    
+    // Get line items
+    const lineItems = await all('SELECT * FROM quotation_line_items WHERE quotation_id = ?', [id]);
+    
+    // Get customer info if available
+    let customer = null;
+    if (quotation.customer_id) {
+      customer = await get('SELECT * FROM customers WHERE id = ?', [quotation.customer_id]);
+    }
+    
+    // Prepare quote data for PDF generation
+    const quoteData = {
+      id: quotation.id,
+      quote_number: quotation.quote_number,
+      customer: customer || {
+        name: 'Customer Name',
+        address: 'Customer Address',
+        phone: 'N/A',
+        email: 'N/A'
+      },
+      lineItems: lineItems.map(item => ({
+        name: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        total: item.total_price
+      })),
+      totalAmount: quotation.total_amount,
+      currency: quotation.currency || 'SAR',
+      validUntil: quotation.valid_until,
+      notes: quotation.notes,
+      terms: quotation.terms,
+      created_at: quotation.created_at
+    };
+    
+    // For now, return the quote data as JSON
+    // The actual PDF generation will be handled by the frontend
+    res.json({
+      message: 'Quote data for PDF generation',
+      quote: quoteData
+    });
+    
+  } catch (error) {
+    console.error('PDF generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

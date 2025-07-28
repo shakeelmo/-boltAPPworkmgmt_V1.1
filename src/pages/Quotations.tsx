@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Filter, FileText, Users, TrendingUp, Clock } from 'lucide-react';
 import { QuoteCard } from '../components/Quotations/QuoteCard';
 import { CreateQuoteModal } from '../components/Quotations/CreateQuoteModal';
-import { QuotePDFPreview } from '../components/Quotations/QuotePDFPreview';
+import QuotePDFPreview from '../components/Quotations/QuotePDFPreview';
 import { useQuotations } from '../hooks/useQuotations';
 import { Quote } from '../types/quotation';
 import toast from 'react-hot-toast';
@@ -282,10 +282,9 @@ export function Quotations() {
       {/* PDF Preview Modal */}
       {previewQuote && (
         <QuotePDFPreview
-          isOpen={!!previewQuote}
-          onClose={() => setPreviewQuote(null)}
           quote={previewQuote}
           customer={customers.find(c => c.id === previewQuote.customerId)!}
+          onClose={() => setPreviewQuote(null)}
         />
       )}
     </div>

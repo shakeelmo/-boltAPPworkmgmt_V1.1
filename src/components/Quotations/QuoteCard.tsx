@@ -4,7 +4,7 @@ import { Quote } from '../../types/quotation';
 import { Customer } from '../../types';
 import { useQuotations } from '../../hooks/useQuotations';
 import { formatCurrency } from '../../utils/format';
-import { pdfGenerator } from '../../utils/pdfGenerator';
+import { generateQuotationPDF } from '../../utils/pdfGenerator';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -114,7 +114,15 @@ export function QuoteCard({ quote, customer, onEdit, onDuplicate, onViewPDF }: Q
     }
     try {
       setIsDownloading(true);
-      await pdfGenerator.downloadQuotePDF(quote, exportCustomer, settings);
+      const pdfBlob = await generateQuotationPDF(quote, settings);
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `quotation-${quote.quoteNumber || quote.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -164,7 +172,15 @@ export function QuoteCard({ quote, customer, onEdit, onDuplicate, onViewPDF }: Q
     setShowCustomerSelect(false);
     setIsDownloading(true);
     try {
-      await pdfGenerator.downloadQuotePDF(quote, exportCustomer, settings);
+      const pdfBlob = await generateQuotationPDF(quote, settings);
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `quotation-${quote.quoteNumber || quote.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       alert('Error generating PDF. Please try again.');
     } finally {

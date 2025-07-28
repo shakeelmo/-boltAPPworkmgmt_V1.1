@@ -26,6 +26,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
+      status TEXT DEFAULT 'active',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -80,7 +81,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
       FOREIGN KEY (created_by) REFERENCES users(id)
     )`);
     // Quotation Items table
-    db.run(`CREATE TABLE IF NOT EXISTS quotation_items (
+    db.run(`CREATE TABLE IF NOT EXISTS quotation_line_items (
       id TEXT PRIMARY KEY,
       quotation_id TEXT NOT NULL,
       description TEXT NOT NULL,
