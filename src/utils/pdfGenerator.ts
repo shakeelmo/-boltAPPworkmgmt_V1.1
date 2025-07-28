@@ -69,7 +69,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           background: white;
           position: relative;
           min-height: 297mm;
-          padding-bottom: 180px; /* Reduced padding for footer */
+          padding-bottom: 200px; /* Increased padding for footer */
         }
         .header {
           display: flex;
@@ -109,7 +109,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           margin-bottom: 5px;
         }
         .company-name-ar {
-          font-size: 24px;
+          font-size: 26px;
           font-weight: bold;
           color: #1E40AF;
           margin-bottom: 5px;
@@ -119,9 +119,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           overflow: visible;
           text-overflow: clip;
           max-width: none;
-          line-height: 1.4;
+          line-height: 1.5;
           letter-spacing: 0px;
-          padding-top: 5px;
+          padding-top: 8px;
+          margin-top: 10px;
         }
         .company-details {
           font-size: 12px;
@@ -243,20 +244,20 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           right: 0;
           background: #1E40AF;
           color: white;
-          padding: 15px;
+          padding: 20px;
           font-size: 11px;
           text-align: center;
           width: 100%;
           box-sizing: border-box;
           z-index: 1000;
-          min-height: 80px;
+          min-height: 120px;
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
         }
         .page-number {
           position: absolute;
-          bottom: 40px;
+          bottom: 50px;
           right: 20px;
           font-size: 12px;
           color: white;
@@ -272,7 +273,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           font-size: 12px;
         }
         .contact-info {
-          margin-top: 5px;
+          margin-top: 10px;
           font-size: 10px;
           line-height: 1.4;
         }
