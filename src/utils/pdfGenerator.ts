@@ -5,6 +5,42 @@ import '@abdulrysr/saudi-riyal-new-symbol-font';
 // Saudi Riyal symbol - using the correct Unicode character
 const SAR_SYMBOL = '﷼';
 
+// Test function to debug PDF generation
+export async function testPDFGeneration() {
+  const testQuote = {
+    quote_number: 'Q-TEST-001',
+    created_at: new Date().toISOString(),
+    customer: {
+      name: 'Test Customer',
+      address: '123 Test Street, Riyadh',
+      phone: '+966501234567',
+      email: 'test@customer.com'
+    },
+    lineItems: [
+      {
+        name: 'Web Development',
+        description: 'Custom website development services',
+        quantity: 1,
+        unitPrice: 5000,
+        total: 5000
+      }
+    ],
+    terms: 'Payment terms: 30 days\nVAT included\nValid for 30 days',
+    termsAr: 'شروط الدفع: 30 يوم\nضريبة القيمة المضافة مشمولة\nصالح لمدة 30 يوم'
+  };
+
+  console.log('Testing PDF generation with sample data:', testQuote);
+  
+  try {
+    const pdfBlob = await generateQuotationPDF(testQuote);
+    console.log('Test PDF generation successful:', pdfBlob);
+    return pdfBlob;
+  } catch (error) {
+    console.error('Test PDF generation failed:', error);
+    throw error;
+  }
+}
+
 export async function generateQuotationPDF(quote: any, settings: any = {}) {
   console.log('PDF Generator - Input quote:', quote);
   console.log('PDF Generator - Input settings:', settings);
@@ -63,6 +99,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           position: relative;
           min-height: 297mm;
           font-size: 12px;
+          background: white;
         }
         .container {
           max-width: 210mm;
@@ -71,7 +108,8 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           background: white;
           position: relative;
           min-height: 297mm;
-          padding-bottom: 220px; /* Increased padding for footer */
+          padding-bottom: 220px;
+          box-sizing: border-box;
         }
         .header {
           display: flex;
@@ -290,6 +328,9 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           font-family: 'Noto Sans Arabic', sans-serif;
           margin-top: 15px;
         }
+        * {
+          box-sizing: border-box;
+        }
       </style>
     </head>
     <body>
@@ -440,12 +481,13 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     tempDiv.style.width = '210mm';
     tempDiv.style.height = '297mm';
     tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.overflow = 'hidden';
     document.body.appendChild(tempDiv);
 
-    // Wait for images to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for fonts and images to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Convert to canvas
+    // Convert to canvas with enhanced options
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -454,14 +496,22 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       width: 794, // A4 width in pixels at 96 DPI
       height: 1123, // A4 height in pixels at 96 DPI
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      logging: true,
+      imageTimeout: 15000,
+      removeContainer: false,
+      foreignObjectRendering: true,
+      ignoreElements: (element) => {
+        // Ensure all elements are captured
+        return false;
+      }
     });
 
     // Remove temporary div
     document.body.removeChild(tempDiv);
 
-    // Convert canvas to image data
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    // Convert canvas to image data with higher quality
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
 
     // Create PDF using jsPDF
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -477,50 +527,6 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     return blob;
   } catch (error) {
     console.error('PDF Generator - Error generating PDF:', error);
-    throw error;
-  }
-}
-
-// Test function to verify PDF generation
-export async function testPDFGeneration() {
-  const testQuote = {
-    id: 'test-quote-123',
-    quote_number: 'Q-TEST-001',
-    customer: {
-      name: 'Test Customer Company',
-      address: '123 Test Street, Riyadh, Saudi Arabia',
-      phone: '+966 50 123 4567',
-      email: 'test@example.com'
-    },
-    lineItems: [
-      {
-        name: 'Web Development Services',
-        quantity: 2,
-        unitPrice: 5000,
-        total: 10000
-      },
-      {
-        name: 'Mobile App Development',
-        quantity: 1,
-        unitPrice: 15000,
-        total: 15000
-      },
-      {
-        name: 'UI/UX Design',
-        quantity: 3,
-        unitPrice: 2000,
-        total: 6000
-      }
-    ],
-    created_at: new Date().toISOString()
-  };
-
-  try {
-    const blob = await generateQuotationPDF(testQuote);
-    console.log('PDF Generation Test - Success:', blob);
-    return blob;
-  } catch (error) {
-    console.error('PDF Generation Test - Error:', error);
     throw error;
   }
 }
