@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for SMART UNIVERSE logo */
+.smart-universe-logo {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  border: 2px solid #ff6b35;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  transition: all 0.3s ease;
+}
+
+.smart-universe-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+}
+
+.smart-text {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.universe-text {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.tagline-text {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+}
