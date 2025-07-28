@@ -5,42 +5,6 @@ import '@abdulrysr/saudi-riyal-new-symbol-font';
 // Saudi Riyal symbol - using the correct Unicode character
 const SAR_SYMBOL = '﷼';
 
-// Test function to debug PDF generation
-export async function testPDFGeneration() {
-  const testQuote = {
-    quote_number: 'Q-TEST-001',
-    created_at: new Date().toISOString(),
-    customer: {
-      name: 'Test Customer',
-      address: '123 Test Street, Riyadh',
-      phone: '+966501234567',
-      email: 'test@customer.com'
-    },
-    lineItems: [
-      {
-        name: 'Web Development',
-        description: 'Custom website development services',
-        quantity: 1,
-        unitPrice: 5000,
-        total: 5000
-      }
-    ],
-    terms: 'Payment terms: 30 days\nVAT included\nValid for 30 days',
-    termsAr: 'شروط الدفع: 30 يوم\nضريبة القيمة المضافة مشمولة\nصالح لمدة 30 يوم'
-  };
-
-  console.log('Testing PDF generation with sample data:', testQuote);
-  
-  try {
-    const pdfBlob = await generateQuotationPDF(testQuote);
-    console.log('Test PDF generation successful:', pdfBlob);
-    return pdfBlob;
-  } catch (error) {
-    console.error('Test PDF generation failed:', error);
-    throw error;
-  }
-}
-
 export async function generateQuotationPDF(quote: any, settings: any = {}) {
   console.log('PDF Generator - Input quote:', quote);
   console.log('PDF Generator - Input settings:', settings);
@@ -74,7 +38,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   
   console.log('PDF Generator - Customer data:', customer);
 
-  // Updated Smart Universe logo to exactly match the attached design
+  // Updated Smart Universe logo with proper base64 encoding
   const LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSJ3aGl0ZSIvPgo8dGV4dCB4PSI2MCIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNNQVJUPC90ZXh0Pgo8dGV4dCB4PSI2MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxRTQwQUYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlVOSVZFUlNFPC90ZXh0Pgo8bGluZSB4MT0iMjAiIHkxPSI2MCIgeDI9IjMwIiB5Mj0iNjAiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjx0ZXh0IHg9IjYwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkZPUiBDT01NVU5JQ0FUSU9OUyBBTkQgSU5GT1JNQVRJT04gVEVDSE5PTE9HWTwvdGV4dD4KPGxpbmUgeDE9IjkwIiB5MT0iNjAiIHgyPSIxMDAiIHkyPSI2MCIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjEiLz4KPGNpcmNsZSBjeD0iOTAiIGN5PSIzMCIgcj0iNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIzIi8+Cjwvc3ZnPg==';
 
   // Generate the HTML content
@@ -99,7 +63,6 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           position: relative;
           min-height: 297mm;
           font-size: 12px;
-          background: white;
         }
         .container {
           max-width: 210mm;
@@ -109,7 +72,6 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           position: relative;
           min-height: 297mm;
           padding-bottom: 220px;
-          box-sizing: border-box;
         }
         .header {
           display: flex;
@@ -147,9 +109,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           font-weight: bold;
           color: #1E40AF;
           margin-bottom: 5px;
+          text-align: left;
         }
         .company-name-ar {
-          font-size: 26px;
+          font-size: 28px;
           font-weight: bold;
           color: #1E40AF;
           margin-bottom: 5px;
@@ -159,15 +122,17 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           overflow: visible;
           text-overflow: clip;
           max-width: none;
-          line-height: 1.5;
+          line-height: 1.6;
           letter-spacing: 0px;
-          padding-top: 8px;
-          margin-top: 10px;
+          padding-top: 10px;
+          margin-top: 15px;
+          text-align: right;
         }
         .company-details {
           font-size: 12px;
           color: #666;
           line-height: 1.6;
+          text-align: left;
         }
         .quote-info {
           flex: 0 0 200px;
@@ -203,10 +168,12 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           margin-bottom: 10px;
           border-bottom: 1px solid #e0e0e0;
           padding-bottom: 5px;
+          text-align: left;
         }
         .customer-details {
           font-size: 12px;
           line-height: 1.6;
+          text-align: left;
         }
         .items-section {
           margin-bottom: 30px;
@@ -268,11 +235,13 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           font-weight: bold;
           color: #1E40AF;
           margin-bottom: 10px;
+          text-align: left;
         }
         .terms-list {
           font-size: 11px;
           line-height: 1.4;
           color: #666;
+          text-align: left;
         }
         .terms-list li {
           margin-bottom: 5px;
@@ -328,8 +297,11 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           font-family: 'Noto Sans Arabic', sans-serif;
           margin-top: 15px;
         }
-        * {
-          box-sizing: border-box;
+        .arabic-terms .terms-title {
+          text-align: right;
+        }
+        .arabic-terms .terms-list {
+          text-align: right;
         }
       </style>
     </head>
@@ -339,7 +311,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
         <div class="header">
           <div class="logo-section">
             <div class="logo">
-              <img src="${LOGO_BASE64}" alt="Smart Universe Logo" />
+              <img src="${LOGO_BASE64}" alt="Smart Universe Logo" style="width: 100%; height: 100%; object-fit: contain;" />
             </div>
           </div>
           <div class="company-info">
@@ -481,13 +453,12 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     tempDiv.style.width = '210mm';
     tempDiv.style.height = '297mm';
     tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.overflow = 'hidden';
     document.body.appendChild(tempDiv);
 
-    // Wait for fonts and images to load
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait for images to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Convert to canvas with enhanced options
+    // Convert to canvas
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -496,22 +467,14 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       width: 794, // A4 width in pixels at 96 DPI
       height: 1123, // A4 height in pixels at 96 DPI
       scrollX: 0,
-      scrollY: 0,
-      logging: true,
-      imageTimeout: 15000,
-      removeContainer: false,
-      foreignObjectRendering: true,
-      ignoreElements: (element) => {
-        // Ensure all elements are captured
-        return false;
-      }
+      scrollY: 0
     });
 
     // Remove temporary div
     document.body.removeChild(tempDiv);
 
-    // Convert canvas to image data with higher quality
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    // Convert canvas to image data
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
     // Create PDF using jsPDF
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -527,6 +490,50 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     return blob;
   } catch (error) {
     console.error('PDF Generator - Error generating PDF:', error);
+    throw error;
+  }
+}
+
+// Test function to verify PDF generation
+export async function testPDFGeneration() {
+  const testQuote = {
+    id: 'test-quote-123',
+    quote_number: 'Q-TEST-001',
+    customer: {
+      name: 'Test Customer Company',
+      address: '123 Test Street, Riyadh, Saudi Arabia',
+      phone: '+966 50 123 4567',
+      email: 'test@example.com'
+    },
+    lineItems: [
+      {
+        name: 'Web Development Services',
+        quantity: 2,
+        unitPrice: 5000,
+        total: 10000
+      },
+      {
+        name: 'Mobile App Development',
+        quantity: 1,
+        unitPrice: 15000,
+        total: 15000
+      },
+      {
+        name: 'UI/UX Design',
+        quantity: 3,
+        unitPrice: 2000,
+        total: 6000
+      }
+    ],
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    const blob = await generateQuotationPDF(testQuote);
+    console.log('PDF Generation Test - Success:', blob);
+    return blob;
+  } catch (error) {
+    console.error('PDF Generation Test - Error:', error);
     throw error;
   }
 }
