@@ -31,9 +31,8 @@ router.get('/', authenticateToken, requirePermission('budgets', 'read'), async (
     
     // Get budgets with pagination
     const budgets = await all(
-      `SELECT b.*, p.title as project_title, u.name as created_by_name 
+      `SELECT b.*, u.name as created_by_name 
        FROM budgets b 
-       LEFT JOIN projects p ON b.project_id = p.id 
        LEFT JOIN users u ON b.created_by = u.id 
        ${whereClause} 
        ORDER BY b.created_at DESC 
@@ -68,9 +67,8 @@ router.get('/:id', authenticateToken, requirePermission('budgets', 'read'), asyn
     const { id } = req.params;
     
     const budget = await get(
-      `SELECT b.*, p.title as project_title, u.name as created_by_name 
+      `SELECT b.*, u.name as created_by_name 
        FROM budgets b 
-       LEFT JOIN projects p ON b.project_id = p.id 
        LEFT JOIN users u ON b.created_by = u.id 
        WHERE b.id = ?`,
       [id]

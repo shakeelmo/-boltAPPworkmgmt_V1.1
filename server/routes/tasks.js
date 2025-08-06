@@ -36,9 +36,8 @@ router.get('/', authenticateToken, requirePermission('tasks', 'read'), async (re
     
     // Get tasks with pagination
     const tasks = await all(
-      `SELECT t.*, p.title as project_title, u.name as assigned_to_name 
+      `SELECT t.*, u.name as assigned_to_name 
        FROM tasks t 
-       LEFT JOIN projects p ON t.project_id = p.id 
        LEFT JOIN users u ON t.assigned_to = u.id 
        ${whereClause} 
        ORDER BY t.created_at DESC 
@@ -73,9 +72,8 @@ router.get('/:id', authenticateToken, requirePermission('tasks', 'read'), async 
     const { id } = req.params;
     
     const task = await get(
-      `SELECT t.*, p.title as project_title, u.name as assigned_to_name 
+      `SELECT t.*, u.name as assigned_to_name 
        FROM tasks t 
-       LEFT JOIN projects p ON t.project_id = p.id 
        LEFT JOIN users u ON t.assigned_to = u.id 
        WHERE t.id = ?`,
       [id]

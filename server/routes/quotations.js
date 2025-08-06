@@ -1,97 +1,65 @@
 const express = require('express');
-const { run, get, all } = require('../db');
-const { authenticateToken, requirePermission } = require('../middleware/auth');
-
 const router = express.Router();
+const { authenticateToken, requirePermission } = require('../middleware/auth');
+const { run, all, get } = require('../db');
 
-// Function to generate quote number
+// Generate quote number
 const generateQuoteNumber = async () => {
-  try {
-    // Get current date components
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, '0');
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Generate a random 4-digit number
-    const randomNum = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
-    
-    // Format: Q-DDMM-XXXX (e.g., Q-1507-1234)
-    const quoteNumber = `Q-${day}${month}-${randomNum}`;
-    
-    // Check if this quote number already exists
-    const existingQuote = await get(
-      'SELECT id FROM quotations WHERE quote_number = ?',
-      [quoteNumber]
-    );
-    
-    // If exists, generate a new one (recursive call with different random number)
-    if (existingQuote) {
-      return generateQuoteNumber();
-    }
-    
-    return quoteNumber;
-  } catch (error) {
-    console.error('Error generating quote number:', error);
-    // Fallback to timestamp-based number
-    return `Q-${Date.now()}`;
-  }
+  const result = await get('SELECT COUNT(*) as count FROM quotations');
+  const count = result.count + 1;
+  const year = new Date().getFullYear();
+  return `Q-${year}-${count.toString().padStart(4, '0')}`;
 };
 
 // Get all quotations
 router.get('/', authenticateToken, requirePermission('quotations', 'read'), async (req, res) => {
   try {
-    const { search, status, page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status, customer_id } = req.query;
     const offset = (page - 1) * limit;
     
     let whereClause = 'WHERE 1=1';
     const params = [];
-    
-    if (search) {
-      whereClause += ' AND (q.id LIKE ? OR q.quote_number LIKE ?)';
-      const searchTerm = `%${search}%`;
-      params.push(searchTerm, searchTerm);
-    }
     
     if (status) {
       whereClause += ' AND q.status = ?';
       params.push(status);
     }
     
-    // Get quotations with pagination - removed proposal references
-    const quotations = await all(
-      `SELECT q.*, u.name as created_by_name 
-       FROM quotations q 
-       LEFT JOIN users u ON q.created_by = u.id 
-       ${whereClause} 
-       ORDER BY q.created_at DESC 
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
-    );
+    if (customer_id) {
+      whereClause += ' AND q.customer_id = ?';
+      params.push(customer_id);
+    }
+    
+    const quotations = await all(`
+      SELECT q.*, u.name as created_by_name, c.name as customer_name
+      FROM quotations q 
+      LEFT JOIN users u ON q.created_by = u.id 
+      LEFT JOIN customers c ON q.customer_id = c.id
+      ${whereClause}
+      ORDER BY q.created_at DESC 
+      LIMIT ? OFFSET ?
+    `, [...params, parseInt(limit), offset]);
     
     // Get line items for each quotation
-    const quotationsWithLineItems = await Promise.all(
-      quotations.map(async (quotation) => {
-        const lineItems = await all(
-          'SELECT * FROM quotation_line_items WHERE quotation_id = ?',
-          [quotation.id]
-        );
-        return { ...quotation, lineItems };
-      })
-    );
+    for (let quotation of quotations) {
+      const lineItems = await all(
+        'SELECT * FROM quotation_line_items WHERE quotation_id = ? ORDER BY created_at ASC',
+        [quotation.id]
+      );
+      quotation.lineItems = lineItems;
+    }
     
-    // Get total count
-    const countResult = await get(
-      `SELECT COUNT(*) as total FROM quotations q ${whereClause}`,
-      params
-    );
+    const totalResult = await get(`
+      SELECT COUNT(*) as total FROM quotations q ${whereClause}
+    `, params);
     
     res.json({
-      quotations: quotationsWithLineItems,
+      quotations,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: countResult.total,
-        pages: Math.ceil(countResult.total / limit)
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
       }
     });
   } catch (error) {
@@ -105,77 +73,100 @@ router.get('/:id', authenticateToken, requirePermission('quotations', 'read'), a
   try {
     const { id } = req.params;
     
-    const quotation = await get(
-      `SELECT q.*, u.name as created_by_name 
-       FROM quotations q 
-       LEFT JOIN users u ON q.created_by = u.id 
-       WHERE q.id = ?`,
-      [id]
-    );
+    const quotation = await get(`
+      SELECT q.*, u.name as created_by_name, c.name as customer_name
+      FROM quotations q 
+      LEFT JOIN users u ON q.created_by = u.id 
+      LEFT JOIN customers c ON q.customer_id = c.id
+      WHERE q.id = ?
+    `, [id]);
     
     if (!quotation) {
       return res.status(404).json({ error: 'Quotation not found' });
     }
     
-    // Get line items
     const lineItems = await all(
-      'SELECT * FROM quotation_line_items WHERE quotation_id = ?',
+      'SELECT * FROM quotation_line_items WHERE quotation_id = ? ORDER BY created_at ASC',
       [id]
     );
     
-    res.json({ 
-      quotation: { ...quotation, lineItems }
-    });
+    quotation.lineItems = lineItems;
+    
+    res.json({ quotation });
   } catch (error) {
     console.error('Get quotation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Create new quotation
+// Create quotation
 router.post('/', authenticateToken, requirePermission('quotations', 'create'), async (req, res) => {
   try {
-    const { amount, total_amount, currency, valid_until, terms, lineItems, customer_id } = req.body;
+    const { 
+      amount, 
+      total_amount, 
+      currency, 
+      valid_until, 
+      terms, 
+      lineItems, 
+      customer_id,
+      subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
+      vatRate,
+      vatAmount,
+      total
+    } = req.body;
     
-    // Validate required fields
-    const finalAmount = amount || total_amount;
-    if (!finalAmount || finalAmount === undefined || finalAmount === null) {
-      return res.status(400).json({ error: 'Amount is required' });
+    const finalAmount = amount || total_amount || total;
+    
+    if (!finalAmount || isNaN(finalAmount)) {
+      return res.status(400).json({ error: 'Valid amount is required' });
     }
     
-    // Ensure amount is a valid number
     const numericAmount = parseFloat(finalAmount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      return res.status(400).json({ error: 'Amount must be a valid positive number' });
-    }
     
     const quotationId = Date.now().toString();
     const quoteNumber = await generateQuoteNumber();
     
-    // Removed proposal_id from INSERT
     await run(
-      `INSERT INTO quotations (id, quote_number, total_amount, currency, valid_until, notes, created_by, customer_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [quotationId, quoteNumber, numericAmount, currency || 'SAR', valid_until, terms, req.user.id, customer_id || null]
+      `INSERT INTO quotations (
+        id, quotation_number, total_amount, currency, valid_until, terms, created_by, customer_id,
+        subtotal, discount_type, discount_value, discount_amount, vat_rate, vat_amount
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        quotationId, 
+        quoteNumber, 
+        numericAmount, 
+        currency || 'SAR', 
+        valid_until, 
+        terms, 
+        req.user.id, 
+        customer_id || null,
+        subtotal || numericAmount,
+        discountType || 'percentage',
+        discountValue || 0,
+        discountAmount || 0,
+        vatRate || 15,
+        vatAmount || 0
+      ]
     );
     
-    // Insert line items if provided
     if (lineItems && lineItems.length > 0) {
       for (const item of lineItems) {
         const itemId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
         await run(
-          `INSERT INTO quotation_line_items (id, quotation_id, description, quantity, unit_price, total_price) 
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [itemId, quotationId, item.description, item.quantity, item.unitPrice, item.total]
+          `INSERT INTO quotation_line_items (id, quotation_id, description, quantity, unit, custom_unit, unit_price, total_price) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [itemId, quotationId, item.description || item.name || '', item.quantity, item.unit || 'piece', item.customUnit || null, item.unitPrice, item.total]
         );
       }
     }
     
-    const newQuotation = await get('SELECT * FROM quotations WHERE id = ?', [quotationId]);
-    
-    res.status(201).json({
+    res.status(201).json({ 
       message: 'Quotation created successfully',
-      quotation: newQuotation
+      quotation: { id: quotationId, quotation_number: quoteNumber }
     });
   } catch (error) {
     console.error('Create quotation error:', error);
@@ -190,69 +181,128 @@ router.post('/', authenticateToken, requirePermission('quotations', 'create'), a
 router.put('/:id', authenticateToken, requirePermission('quotations', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, currency, valid_until, terms, status, customer_id } = req.body;
+    console.log('Update quotation request for ID:', id);
+    console.log('Request body:', req.body);
+    
+    const { 
+      amount, 
+      total_amount, 
+      currency, 
+      valid_until, 
+      terms, 
+      status, 
+      customer_id,
+      subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
+      vatRate,
+      vatAmount,
+      total
+    } = req.body;
 
-    // Validate required fields
-    if (amount !== undefined && amount !== null) {
-      const numericAmount = parseFloat(amount);
-      if (isNaN(numericAmount) || numericAmount <= 0) {
-        return res.status(400).json({ error: 'Amount must be a valid positive number' });
+    const finalAmount = amount || total_amount || total;
+    console.log('Final amount calculated:', finalAmount, 'from:', { amount, total_amount, total });
+    
+    if (finalAmount && isNaN(finalAmount)) {
+      console.log('Amount validation failed - isNaN:', finalAmount);
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+
+    const updateFields = [];
+    const updateValues = [];
+
+    if (finalAmount !== undefined) {
+      updateFields.push('total_amount = ?');
+      updateValues.push(parseFloat(finalAmount));
+    }
+
+    if (currency !== undefined) {
+      updateFields.push('currency = ?');
+      updateValues.push(currency);
+    }
+
+    if (valid_until !== undefined) {
+      updateFields.push('valid_until = ?');
+      updateValues.push(valid_until);
+    }
+
+    if (terms !== undefined) {
+      updateFields.push('terms = ?');
+      updateValues.push(terms);
+    }
+
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      updateValues.push(status);
+    }
+
+    if (customer_id !== undefined) {
+      updateFields.push('customer_id = ?');
+      updateValues.push(customer_id);
+    }
+
+    if (subtotal !== undefined) {
+      updateFields.push('subtotal = ?');
+      updateValues.push(parseFloat(subtotal));
+    }
+
+    if (discountType !== undefined) {
+      updateFields.push('discount_type = ?');
+      updateValues.push(discountType);
+    }
+
+    if (discountValue !== undefined) {
+      updateFields.push('discount_value = ?');
+      updateValues.push(parseFloat(discountValue));
+    }
+
+    if (discountAmount !== undefined) {
+      updateFields.push('discount_amount = ?');
+      updateValues.push(parseFloat(discountAmount));
+    }
+
+    if (vatRate !== undefined) {
+      updateFields.push('vat_rate = ?');
+      updateValues.push(parseFloat(vatRate));
+    }
+
+    if (vatAmount !== undefined) {
+      updateFields.push('vat_amount = ?');
+      updateValues.push(parseFloat(vatAmount));
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    updateValues.push(id);
+
+    await run(
+      `UPDATE quotations SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      updateValues
+    );
+
+    // Update line items if provided
+    if (req.body.lineItems && Array.isArray(req.body.lineItems)) {
+      // Delete existing line items
+      await run('DELETE FROM quotation_line_items WHERE quotation_id = ?', [id]);
+      
+      // Insert new line items
+      for (const item of req.body.lineItems) {
+        const itemId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        await run(
+          `INSERT INTO quotation_line_items (id, quotation_id, description, quantity, unit, custom_unit, unit_price, total_price) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [itemId, id, item.description || item.name || '', item.quantity, item.unit || 'piece', item.customUnit || null, item.unitPrice, item.total]
+        );
       }
     }
 
-    // Check if quotation exists
-    const existingQuotation = await get('SELECT id FROM quotations WHERE id = ?', [id]);
-    if (!existingQuotation) {
-      return res.status(404).json({ error: 'Quotation not found' });
-    }
-
-    const updateData = [];
-    const updateFields = [];
-    
-    if (amount !== undefined) {
-      updateFields.push('amount = ?');
-      updateData.push(parseFloat(amount));
-    }
-    if (currency !== undefined) {
-      updateFields.push('currency = ?');
-      updateData.push(currency);
-    }
-    if (valid_until !== undefined) {
-      updateFields.push('valid_until = ?');
-      updateData.push(valid_until);
-    }
-    if (terms !== undefined) {
-      updateFields.push('terms = ?');
-      updateData.push(terms);
-    }
-    if (status !== undefined) {
-      updateFields.push('status = ?');
-      updateData.push(status);
-    }
-    if (customer_id !== undefined) {
-      updateFields.push('customer_id = ?');
-      updateData.push(customer_id);
-    }
-    
-    updateFields.push('updated_at = CURRENT_TIMESTAMP');
-    updateData.push(id);
-
-    if (updateFields.length > 0) {
-      await run(
-        `UPDATE quotations SET ${updateFields.join(', ')} WHERE id = ?`,
-        updateData
-      );
-    }
-
-    const updatedQuotation = await get('SELECT * FROM quotations WHERE id = ?', [id]);
-
-    res.json({
-      message: 'Quotation updated successfully',
-      quotation: updatedQuotation
-    });
+    res.json({ message: 'Quotation updated successfully' });
   } catch (error) {
     console.error('Update quotation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -261,78 +311,19 @@ router.delete('/:id', authenticateToken, requirePermission('quotations', 'delete
   try {
     const { id } = req.params;
     
-    // Check if quotation exists
-    const existingQuotation = await get('SELECT id FROM quotations WHERE id = ?', [id]);
-    if (!existingQuotation) {
-      return res.status(404).json({ error: 'Quotation not found' });
-    }
-    
-    // Delete line items first
+    // Delete line items first (due to foreign key constraint)
     await run('DELETE FROM quotation_line_items WHERE quotation_id = ?', [id]);
     
     // Delete quotation
-    await run('DELETE FROM quotations WHERE id = ?', [id]);
+    const result = await run('DELETE FROM quotations WHERE id = ?', [id]);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
     
     res.json({ message: 'Quotation deleted successfully' });
   } catch (error) {
     console.error('Delete quotation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Generate PDF for quotation
-router.get('/:id/pdf', authenticateToken, requirePermission('quotations', 'read'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Get quotation with line items
-    const quotation = await get('SELECT * FROM quotations WHERE id = ?', [id]);
-    if (!quotation) {
-      return res.status(404).json({ error: 'Quotation not found' });
-    }
-    
-    // Get line items
-    const lineItems = await all('SELECT * FROM quotation_line_items WHERE quotation_id = ?', [id]);
-    
-    // Get customer info if available
-    let customer = null;
-    if (quotation.customer_id) {
-      customer = await get('SELECT * FROM customers WHERE id = ?', [quotation.customer_id]);
-    }
-    
-    // Prepare quote data for PDF generation
-    const quoteData = {
-      id: quotation.id,
-      quote_number: quotation.quote_number,
-      customer: customer || {
-        name: 'Customer Name',
-        address: 'Customer Address',
-        phone: 'N/A',
-        email: 'N/A'
-      },
-      lineItems: lineItems.map(item => ({
-        name: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        total: item.total_price
-      })),
-      totalAmount: quotation.total_amount,
-      currency: quotation.currency || 'SAR',
-      validUntil: quotation.valid_until,
-      notes: quotation.notes,
-      terms: quotation.terms,
-      created_at: quotation.created_at
-    };
-    
-    // For now, return the quote data as JSON
-    // The actual PDF generation will be handled by the frontend
-    res.json({
-      message: 'Quote data for PDF generation',
-      quote: quoteData
-    });
-    
-  } catch (error) {
-    console.error('PDF generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -97,7 +97,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check password - fixed to use correct column name
+    // Check password
+    if (!user.password) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
     const isValidPassword = await bcrypt.compare(password, user.password);
     
     if (!isValidPassword) {
@@ -225,7 +229,11 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     }
 
     // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+    const passwordField = user.password_hash || user.password;
+    if (!passwordField) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    const isValidPassword = await bcrypt.compare(currentPassword, passwordField);
     if (!isValidPassword) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }

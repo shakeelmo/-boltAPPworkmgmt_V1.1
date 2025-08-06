@@ -37,10 +37,15 @@ export function Quotations() {
 
   const handleCreateQuote = async (quoteData: any) => {
     try {
+      console.log('handleCreateQuote called with:', { editingQuote: !!editingQuote, quoteData });
+      
       if (editingQuote) {
+        console.log('Updating quote with ID:', editingQuote.id);
+        console.log('Update data:', quoteData);
         await updateQuote(editingQuote.id, quoteData);
         setEditingQuote(null);
       } else {
+        console.log('Creating new quote');
         await addQuote(quoteData);
       }
       setIsCreateModalOpen(false);
@@ -117,7 +122,7 @@ export function Quotations() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-dark-900">Quotations / عروض الأسعار</h1>

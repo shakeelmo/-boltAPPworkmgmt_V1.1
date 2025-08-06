@@ -31,10 +31,9 @@ router.get('/', authenticateToken, requirePermission('invoices', 'read'), async 
     
     // Get invoices with pagination
     const invoices = await all(
-      `SELECT i.*, c.name as customer_name, p.title as project_title, u.name as created_by_name 
+      `SELECT i.*, c.name as customer_name, u.name as created_by_name 
        FROM invoices i 
        LEFT JOIN customers c ON i.customer_id = c.id 
-       LEFT JOIN projects p ON i.project_id = p.id 
        LEFT JOIN users u ON i.created_by = u.id 
        ${whereClause} 
        ORDER BY i.created_at DESC 
@@ -69,10 +68,9 @@ router.get('/:id', authenticateToken, requirePermission('invoices', 'read'), asy
     const { id } = req.params;
     
     const invoice = await get(
-      `SELECT i.*, c.name as customer_name, p.title as project_title, u.name as created_by_name 
+      `SELECT i.*, c.name as customer_name, u.name as created_by_name 
        FROM invoices i 
        LEFT JOIN customers c ON i.customer_id = c.id 
-       LEFT JOIN projects p ON i.project_id = p.id 
        LEFT JOIN users u ON i.created_by = u.id 
        WHERE i.id = ?`,
       [id]

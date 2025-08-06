@@ -65,15 +65,24 @@ const QuotePDFPreview: React.FC<QuotePDFPreviewProps> = ({ quote, customer, sett
 
         {/* Company Header */}
         <div className="border-b border-gray-200 pb-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-primary-600">Smart Universe Communication and Information Technology</h3>
-              <p className="text-sm text-dark-600" dir="rtl">مؤسسة الكون الذكي للاتصالات وتقنية المعلومات</p>
-              <p className="text-xs text-dark-500 mt-1">
-                King Abdulaziz Road, Riyadh | Phone: +966 50 123 4567 | Email: info@smartuniit.com
-              </p>
+          <div className="flex items-start justify-between">
+            {/* Left Side: English Company Info */}
+            <div className="flex items-start space-x-4">
+              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
+                <span className="text-primary-600 font-bold text-sm">SU</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-primary-600">SMART UNIVERSE</h3>
+                <p className="text-xs text-dark-500">
+                  FOR COMMUNICATIONS AND INFORMATION TECHNOLOGY<br/>
+                  King Abdulaziz Road, Riyadh | Phone: +966 50 123 4567 | Email: info@smartuniit.com
+                </p>
+              </div>
             </div>
+            
+            {/* Right Side: Arabic Company Name and Quote Info */}
             <div className="text-right">
+              <p className="text-sm text-dark-600 mb-3" dir="rtl">مؤسسة الكون الذكي للاتصالات و تقنية المعلومات</p>
               <h4 className="text-lg font-bold text-primary-600">QUOTATION</h4>
               <p className="text-sm text-dark-600">Quote #: {quote.quoteNumber || quote.id}</p>
               <p className="text-sm text-dark-600">Date: {new Date(quote.createdAt || Date.now()).toLocaleDateString()}</p>

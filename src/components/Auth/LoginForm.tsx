@@ -72,7 +72,7 @@ export function LoginForm() {
 
   const handleDemoLogin = (demoEmail: string) => {
     setEmail(demoEmail);
-    setPassword('password123');
+    setPassword(demoEmail === 'admin@example.com' ? 'admin123' : 'password123');
     setError('');
     setShowSetupInstructions(false);
     setIsSignUp(false);
@@ -288,7 +288,7 @@ export function LoginForm() {
                           </li>
                           <li>Navigate to Authentication → Users</li>
                           <li>Click "Add User" and create these accounts:</li>
-                          <li className="ml-4">• admin@smartuniit.com (password: password123)</li>
+                          <li className="ml-4">• admin@example.com (password: admin123)</li>
                           <li className="ml-4">• manager@smartuniit.com (password: password123)</li>
                           <li className="ml-4">• tech@smartuniit.com (password: password123)</li>
                           <li>Disable "Email Confirmation" in Auth settings</li>
@@ -331,11 +331,11 @@ export function LoginForm() {
               <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDemoLogin('admin@smartuniit.com')}
+                  onClick={() => handleDemoLogin('admin@example.com')}
                   className="w-full text-left px-3 py-2 text-xs bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
                 >
                   <div className="font-medium text-dark-700">Admin</div>
-                  <div className="text-dark-500">admin@smartuniit.com</div>
+                  <div className="text-dark-500">admin@example.com</div>
                 </button>
                 <button
                   type="button"

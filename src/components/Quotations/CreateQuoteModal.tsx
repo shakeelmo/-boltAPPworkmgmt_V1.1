@@ -16,7 +16,7 @@ interface CreateQuoteModalProps {
 
 const RiyalSymbol = ({ className = "w-4 h-4" }: { className?: string }) => (
   <img 
-    src="/Riyal_symbol.png" 
+    src="/Riyal_symbol.svg" 
     alt="SAR" 
     className={`inline-block ${className}`}
     style={{ background: 'transparent' }}
@@ -66,7 +66,14 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         discountType: editQuote.discountType || 'percentage',
         discountValue: editQuote.discountValue || 0,
       });
-      setLineItems(editQuote.lineItems);
+      
+      // Ensure line items have proper totals calculated
+      const updatedLineItems = editQuote.lineItems.map(item => ({
+        ...item,
+        total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+      }));
+      console.log('Updated line items for editing:', updatedLineItems);
+      setLineItems(updatedLineItems);
     } else {
       // Reset form for new quote
       const defaultValidUntil = new Date();
@@ -99,7 +106,22 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
   }, [editQuote, user?.id]);
 
   const calculateTotals = () => {
-    const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+    console.log('calculateTotals called with lineItems:', lineItems);
+    
+    const subtotal = lineItems.reduce((sum, item) => {
+      // Calculate total for each line item if it's not set
+      let itemTotal = item.total;
+      if (!itemTotal || itemTotal === 0) {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        itemTotal = quantity * unitPrice;
+        console.log('Recalculated line item total:', { quantity, unitPrice, itemTotal });
+      }
+      console.log('Line item:', item, 'Total:', itemTotal);
+      return sum + itemTotal;
+    }, 0);
+    
+    console.log('Calculated subtotal:', subtotal);
     
     // Calculate discount
     let discountAmount = 0;
@@ -115,22 +137,34 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
     const vatAmount = (subtotal - discountAmount) * (vatRate / 100);
     const total = subtotal - discountAmount + vatAmount;
     
+    console.log('Final calculations:', { subtotal, discountAmount, vatAmount, total, vatRate });
+    
     return { subtotal, discountAmount, vatAmount, total, vatRate };
   };
 
   const handleLineItemChange = (index: number, field: keyof QuoteLineItem, value: any) => {
+    console.log('handleLineItemChange:', { index, field, value });
+    
     const updatedItems = [...lineItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
     // Auto-calculate total when quantity or unit price changes
     if (field === 'quantity' || field === 'unitPrice') {
-      updatedItems[index].total = updatedItems[index].quantity * updatedItems[index].unitPrice;
+      const quantity = Number(updatedItems[index].quantity) || 0;
+      const unitPrice = Number(updatedItems[index].unitPrice) || 0;
+      const newTotal = quantity * unitPrice;
+      console.log('Calculating new total:', quantity, '*', unitPrice, '=', newTotal);
+      updatedItems[index].total = newTotal;
     }
     
     // Auto-fill service details when service is selected
     if (field === 'serviceId' && value) {
       const service = services.find(s => s.id === value);
       if (service) {
+        const quantity = Number(updatedItems[index].quantity) || 0;
+        const unitPrice = Number(service.defaultPrice) || 0;
+        const newTotal = quantity * unitPrice;
+        
         updatedItems[index] = {
           ...updatedItems[index],
           name: service.name,
@@ -138,11 +172,13 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
           description: service.description,
           descriptionAr: service.descriptionAr,
           unitPrice: service.defaultPrice,
-          total: updatedItems[index].quantity * service.defaultPrice,
+          total: newTotal,
         };
+        console.log('Updated line item with service:', updatedItems[index]);
       }
     }
     
+    console.log('Updated line items:', updatedItems);
     setLineItems(updatedItems);
   };
 
@@ -180,11 +216,19 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
     }
 
     const { subtotal, discountAmount, vatAmount, total, vatRate } = calculateTotals();
+    
+    console.log('calculateTotals result:', { subtotal, discountAmount, vatAmount, total, vatRate });
+
+    // Update line items with correct totals before submitting
+    const updatedLineItems = lineItems.map(item => ({
+      ...item,
+      total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+    }));
 
     const quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'quoteNumber'> = {
       customerId: formData.customerId,
       status: formData.status,
-      lineItems,
+      lineItems: updatedLineItems,
       subtotal: Number(subtotal) || 0,
       discountType: formData.discountType,
       discountValue: Number(formData.discountValue) || 0,
@@ -200,6 +244,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
       assignedTo: formData.assignedTo,
       createdBy: user?.id || '',
     };
+    
+    console.log('Final quoteData:', quoteData);
 
     onSubmit(quoteData);
     onClose();
@@ -411,6 +457,46 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-dark-700 mb-1">
+                        Unit
+                      </label>
+                      <select
+                        value={item.unit || 'piece'}
+                        onChange={(e) => handleLineItemChange(index, 'unit', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="piece">Piece</option>
+                        <option value="hour">Hour</option>
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="m">Meter (m)</option>
+                        <option value="m2">Square Meter (m²)</option>
+                        <option value="m3">Cubic Meter (m³)</option>
+                        <option value="liter">Liter (L)</option>
+                        <option value="set">Set</option>
+                        <option value="package">Package</option>
+                        <option value="service">Service</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                    {item.unit === 'custom' && (
+                      <div>
+                        <label className="block text-sm font-medium text-dark-700 mb-1">
+                          Custom Unit
+                        </label>
+                        <input
+                          type="text"
+                          value={item.customUnit || ''}
+                          onChange={(e) => handleLineItemChange(index, 'customUnit', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="Enter custom unit"
+                        />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-dark-700 mb-1">
                         Unit Price (<RiyalSymbol className="w-3 h-3" />)

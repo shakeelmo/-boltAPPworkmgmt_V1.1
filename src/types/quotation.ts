@@ -8,6 +8,8 @@ export interface QuoteLineItem {
   description: string;
   descriptionAr?: string;
   quantity: number;
+  unit?: string;
+  customUnit?: string;
   unitPrice: number;
   total: number;
 }

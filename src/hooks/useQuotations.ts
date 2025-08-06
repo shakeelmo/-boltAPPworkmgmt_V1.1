@@ -202,20 +202,43 @@ export function useQuotations() {
 
   const updateQuote = async (id: string, updates: Partial<Quote>) => {
     try {
-      // Always send amount to backend, and validate it exists
-      const amount = updates.total;
-      if (amount === undefined || amount === null) {
-        throw new Error('Total is required to update a quotation.');
+      console.log('updateQuote called with updates:', updates);
+      
+      // Get the total amount from updates with multiple fallbacks
+      let amount = updates.total || (updates as any).total_amount || (updates as any).amount || 0;
+      
+      console.log('Raw amount value:', amount, 'Type:', typeof amount);
+      
+      // Convert to number if it's a string
+      if (typeof amount === 'string') {
+        amount = parseFloat(amount) || 0;
       }
+      
+      // Ensure it's a number
+      if (typeof amount !== 'number' || isNaN(amount)) {
+        console.log('Amount is not a valid number, defaulting to 0');
+        amount = 0;
+      }
+      
+      console.log('Processed amount value:', amount, 'Type:', typeof amount);
+      
+      // Only reject if it's explicitly negative
+      if (amount < 0) {
+        throw new Error('Total amount cannot be negative.');
+      }
+      
       const payload = {
         ...updates,
         customerId: updates.customerId,
         customer_id: updates.customerId,
-        amount,
+        amount: amount, // Use the processed amount
+        total_amount: amount, // Also send as total_amount for compatibility
         discountType: updates.discountType,
         discountValue: updates.discountValue,
         discountAmount: updates.discountAmount,
       };
+      
+      console.log('Updating quotation with payload:', payload);
       const { quotation } = await api.updateQuotation(id, payload);
       await fetchQuotes();
       return quotation;

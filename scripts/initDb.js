@@ -138,16 +138,25 @@ const createTables = () => {
       // Quotations table
       db.run(`CREATE TABLE IF NOT EXISTS quotations (
         id TEXT PRIMARY KEY,
+        quotation_number TEXT UNIQUE,
         proposal_id TEXT,
-        amount REAL NOT NULL,
-        currency TEXT DEFAULT 'USD',
+        customer_id TEXT,
+        total_amount REAL NOT NULL,
+        currency TEXT DEFAULT 'SAR',
         status TEXT DEFAULT 'draft',
         valid_until DATETIME,
         terms TEXT,
+        subtotal REAL,
+        discount_type TEXT DEFAULT 'percentage',
+        discount_value REAL DEFAULT 0,
+        discount_amount REAL DEFAULT 0,
+        vat_rate REAL DEFAULT 15,
+        vat_amount REAL DEFAULT 0,
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (proposal_id) REFERENCES proposals (id),
+        FOREIGN KEY (customer_id) REFERENCES customers (id),
         FOREIGN KEY (created_by) REFERENCES users (id)
       )`);
 
@@ -157,8 +166,11 @@ const createTables = () => {
         quotation_id TEXT,
         description TEXT NOT NULL,
         quantity INTEGER NOT NULL,
+        unit TEXT DEFAULT 'piece',
+        custom_unit TEXT,
         unit_price REAL NOT NULL,
-        total REAL NOT NULL,
+        total_price REAL NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (quotation_id) REFERENCES quotations (id)
       )`);
 

@@ -91,7 +91,7 @@ const checkPermission = (role, resource, action) => {
       projects: ['create', 'read', 'update', 'delete'],
       tasks: ['create', 'read', 'update', 'delete'],
       proposals: ['create', 'read', 'update'],
-      quotations: ['create', 'read', 'update'],
+      quotations: ['create', 'read', 'update', 'delete'],
       invoices: ['create', 'read', 'update'],
       budgets: ['create', 'read', 'update']
     },

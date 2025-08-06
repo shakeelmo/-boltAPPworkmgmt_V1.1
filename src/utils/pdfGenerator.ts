@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import '@abdulrysr/saudi-riyal-new-symbol-font';
+import { SMART_UNIVERSE_LOGO_BASE64 } from './logoBase64';
+
 
 // Saudi Riyal symbol - using the correct Unicode character
 const SAR_SYMBOL = '﷼';
@@ -9,7 +11,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   console.log('PDF Generator - Input quote:', quote);
   console.log('PDF Generator - Input settings:', settings);
   
-  // Calculate totals properly
+  // Calculate totals properly including discount
   const lineItems = quote.lineItems || [];
   const subtotal = lineItems.reduce((sum: number, item: any) => {
     const quantity = item.quantity || 0;
@@ -18,13 +20,26 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     console.log('Item calculation:', { item, quantity, unitPrice, itemTotal });
     return sum + itemTotal;
   }, 0);
-  const vatRate = 15; // 15% VAT
-  const vatAmount = (subtotal * vatRate) / 100;
-  const total = subtotal + vatAmount;
   
-  console.log('PDF Generator - Calculated totals:', { subtotal, vatAmount, total, lineItemsCount: lineItems.length });
+  // Calculate discount
+  const discountType = quote.discountType || 'percentage';
+  const discountValue = quote.discountValue || 0;
+  let discountAmount = 0;
+  if (discountValue > 0) {
+    if (discountType === 'percentage') {
+      discountAmount = subtotal * (discountValue / 100);
+    } else {
+      discountAmount = discountValue;
+    }
+  }
+  
+  const vatRate = quote.vatRate || settings?.vatRate || 15; // 15% VAT
+  const vatAmount = (subtotal - discountAmount) * (vatRate / 100);
+  const total = subtotal - discountAmount + vatAmount;
+  
+  console.log('PDF Generator - Calculated totals:', { subtotal, discountAmount, vatAmount, total, lineItemsCount: lineItems.length });
 
-  // Custom terms and conditions
+  // Custom terms and conditions - use the actual terms from the quote
   const customTerms = quote.terms || settings.defaultTerms || [
     'Payment terms: 30 days from invoice date',
     'All prices are in Saudi Riyals (SAR)',
@@ -38,8 +53,20 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   
   console.log('PDF Generator - Customer data:', customer);
 
-  // Updated Smart Universe logo with proper base64 encoding
-  const LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSJ3aGl0ZSIvPgo8dGV4dCB4PSI2MCIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNNQVJUPC90ZXh0Pgo8dGV4dCB4PSI2MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxRTQwQUYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlVOSVZFUlNFPC90ZXh0Pgo8bGluZSB4MT0iMjAiIHkxPSI2MCIgeDI9IjMwIiB5Mj0iNjAiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjx0ZXh0IHg9IjYwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IiNGRjZCMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkZPUiBDT01NVU5JQ0FUSU9OUyBBTkQgSU5GT1JNQVRJT04gVEVDSE5PTE9HWTwvdGV4dD4KPGxpbmUgeDE9IjkwIiB5MT0iNjAiIHgyPSIxMDAiIHkyPSI2MCIgc3Ryb2tlPSIjRkY2QjAwIiBzdHJva2Utd2lkdGg9IjEiLz4KPGNpcmNsZSBjeD0iOTAiIGN5PSIzMCIgcj0iNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGNkIwMCIgc3Ryb2tlLXdpZHRoPSIzIi8+Cjwvc3ZnPg==';
+  // Use the actual Smart Universe logo image (properly converted base64)
+  // Enhanced for better PDF rendering compatibility
+  const LOGO_HTML = `
+    <div style="width: 140px; height: 80px; display: flex; align-items: center; justify-content: center; background: white; position: relative; z-index: 10; overflow: hidden; border: none; outline: none;">
+      <img 
+        src="${SMART_UNIVERSE_LOGO_BASE64}" 
+        alt="Smart Universe Logo" 
+        style="width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1; border: none; outline: none; box-shadow: none; filter: none; display: block; max-width: 100%; max-height: 100%;" 
+        crossorigin="anonymous"
+        onload="console.log('Logo loaded successfully')"
+        onerror="console.error('Logo failed to load')"
+      />
+    </div>
+  `;
 
   // Generate the HTML content
   const htmlContent = `
@@ -52,7 +79,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
         
         @page {
           size: A4;
-          margin: 10mm;
+          margin: 15mm;
         }
         body {
           font-family: Arial, sans-serif;
@@ -71,7 +98,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           background: white;
           position: relative;
           min-height: 297mm;
-          padding-bottom: 220px;
+          padding-bottom: 180px;
         }
         .header {
           display: flex;
@@ -81,28 +108,44 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           border-bottom: 2px solid #1E40AF;
           padding-bottom: 20px;
         }
+        .left-section {
+          display: flex;
+          align-items: flex-start;
+          flex: 0 0 50%;
+        }
+        .right-section {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          flex: 0 0 50%;
+          text-align: right;
+        }
         .logo-section {
-          flex: 0 0 200px;
+          flex: 0 0 140px;
+          position: relative;
+          z-index: 10;
+          margin-right: 20px;
         }
         .logo {
-          width: 120px;
-          height: 120px;
+          width: 140px;
+          height: 80px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid #e0e0e0;
-          border-radius: 50%;
-          overflow: hidden;
           background: white;
+          position: relative;
+          z-index: 10;
+          overflow: hidden;
+          border: none;
+          outline: none;
+          box-shadow: none;
         }
-        .logo img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .company-info {
+        .company-info-left {
           flex: 1;
           margin-left: 30px;
+          position: relative;
+          z-index: 1;
+          padding-top: 5px;
         }
         .company-name {
           font-size: 24px;
@@ -112,21 +155,23 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           text-align: left;
         }
         .company-name-ar {
-          font-size: 28px;
+          font-size: 20px;
           font-weight: bold;
           color: #1E40AF;
-          margin-bottom: 5px;
+          margin-bottom: 15px;
           direction: rtl;
-          font-family: 'Noto Sans Arabic', sans-serif;
-          white-space: nowrap;
+          font-family: 'Noto Sans Arabic', Arial, sans-serif;
+          white-space: normal;
           overflow: visible;
           text-overflow: clip;
           max-width: none;
-          line-height: 1.6;
+          line-height: 1.3;
           letter-spacing: 0px;
-          padding-top: 10px;
-          margin-top: 15px;
+          padding-top: 5px;
+          margin-top: 5px;
           text-align: right;
+          word-wrap: break-word;
+          word-break: normal;
         }
         .company-details {
           font-size: 12px;
@@ -135,7 +180,6 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           text-align: left;
         }
         .quote-info {
-          flex: 0 0 200px;
           text-align: right;
         }
         .quote-title {
@@ -212,6 +256,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           border-bottom: 1px solid #e0e0e0;
           font-size: 12px;
         }
+        .totals-table .discount-row {
+          color: #059669;
+          font-weight: bold;
+        }
         .totals-table .total-row {
           font-weight: bold;
           font-size: 14px;
@@ -253,22 +301,22 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
           right: 0;
           background: #1E40AF;
           color: white;
-          padding: 20px;
-          font-size: 11px;
+          padding: 12px 20px;
+          font-size: 10px;
           text-align: center;
           width: 100%;
           box-sizing: border-box;
           z-index: 1000;
-          min-height: 140px;
+          min-height: 60px;
           display: block !important;
           visibility: visible !important;
           opacity: 1 !important;
         }
         .page-number {
           position: absolute;
-          bottom: 60px;
+          bottom: 12px;
           right: 20px;
-          font-size: 12px;
+          font-size: 10px;
           color: white;
           z-index: 1001;
           display: block !important;
@@ -309,30 +357,36 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       <div class="container">
         <!-- Header with Logo and Company Info -->
         <div class="header">
-          <div class="logo-section">
-            <div class="logo">
-              <img src="${LOGO_BASE64}" alt="Smart Universe Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+          <!-- Left Side: English Company Info -->
+          <div class="left-section">
+            <div class="logo-section">
+              <div class="logo">
+                ${LOGO_HTML}
+              </div>
+            </div>
+            <div class="company-info-left">
+              <div class="company-details">
+                FOR COMMUNICATIONS AND INFORMATION TECHNOLOGY<br>
+                Riyadh, Saudi Arabia<br>
+                Phone: +966 11 123 4567<br>
+                Email: info@smartuniit.com<br>
+                CR: 1234567890 | VAT: 300123456789
+              </div>
             </div>
           </div>
-          <div class="company-info">
-            <div class="company-name">SMART UNIVERSE</div>
-            <div class="company-name-ar">الكون الذكي</div>
-            <div class="company-details">
-              FOR COMMUNICATIONS AND INFORMATION TECHNOLOGY<br>
-              Riyadh, Saudi Arabia<br>
-              Phone: +966 11 123 4567<br>
-              Email: info@smartuniit.com<br>
-              CR: 1234567890 | VAT: 300123456789
+          
+          <!-- Right Side: Arabic Company Name and Quote Info -->
+          <div class="right-section">
+            <div class="company-name-ar">مؤسسة الكون الذكي للاتصالات و تقنية المعلومات</div>
+            <div class="quote-info">
+              <div class="quote-title">QUOTATION</div>
+              <div class="quote-number">Quote #: ${quote.quote_number || quote.quoteNumber || 'N/A'}</div>
+              <div class="quote-date">Date: ${new Date(quote.created_at || quote.createdAt || Date.now()).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}</div>
             </div>
-          </div>
-          <div class="quote-info">
-            <div class="quote-title">QUOTATION</div>
-            <div class="quote-number">Quote #: ${quote.quote_number || quote.quoteNumber || 'N/A'}</div>
-            <div class="quote-date">Date: ${new Date(quote.created_at || quote.createdAt || Date.now()).toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}</div>
           </div>
         </div>
 
@@ -388,6 +442,12 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
               <td>المجموع الفرعي / Subtotal</td>
               <td>${subtotal.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
             </tr>
+            ${discountAmount > 0 ? `
+            <tr class="discount-row">
+              <td>الخصم / Discount (${discountType === 'percentage' ? discountValue + '%' : 'Fixed'})</td>
+              <td>-${discountAmount.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
+            </tr>
+            ` : ''}
             <tr>
               <td>ضريبة القيمة المضافة / VAT (${vatRate}%)</td>
               <td>${vatAmount.toFixed(2)} <span class="riyal-symbol">${SAR_SYMBOL}</span></td>
@@ -434,7 +494,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
             Riyadh, Saudi Arabia | Phone: +966 11 123 4567 | Email: info@smartuniit.com<br>
             CR: 1234567890 | VAT: 300123456789
           </div>
-          <div class="page-number">Page 1</div>
+          <div class="page-number">Page 1 of 1</div>
         </div>
       </div>
     </body>
@@ -455,10 +515,12 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     tempDiv.style.backgroundColor = 'white';
     document.body.appendChild(tempDiv);
 
-    // Wait for images to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for images to load with extended timeout
+    console.log('PDF Generator - Waiting for images to load...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log('PDF Generator - Images load timeout completed');
 
-    // Convert to canvas
+    // Convert to canvas with enhanced image handling
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -467,7 +529,18 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       width: 794, // A4 width in pixels at 96 DPI
       height: 1123, // A4 height in pixels at 96 DPI
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      imageTimeout: 15000, // 15 seconds timeout for images
+      logging: true, // Enable logging for debugging
+      onclone: function(clonedDoc) {
+        // Ensure images are properly loaded in the cloned document
+        const images = clonedDoc.querySelectorAll('img');
+        images.forEach(img => {
+          if (img.src.startsWith('data:')) {
+            console.log('Processing base64 image in cloned document');
+          }
+        });
+      }
     });
 
     // Remove temporary div
