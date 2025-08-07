@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean PDF Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1E40AF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .test-button {
+            background: #1E40AF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #1e3a8a;
+        }
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Clean PDF Generation Test</h1>
+        
+        <div class="test-info">
+            <h3>Test Overview</h3>
+            <p>This test generates a clean PDF quotation with proper data formatting to ensure no garbage values appear.</p>
+            <ul>
+                <li><strong>Purpose:</strong> Test clean PDF generation without garbage values</li>
+                <li><strong>Test Data:</strong> Simple quotation with 3 line items</li>
+                <li><strong>Expected Result:</strong> Clean PDF with proper formatting and values</li>
+            </ul>
+        </div>
+
+        <button id="testButton" class="test-button" onclick="runCleanTest()">
+            🚀 Generate Clean PDF
+        </button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script type="module">
+        // Clean test data
+        const testQuote = {
+            id: 'test-clean-quote',
+            quote_number: 'Q-CLEAN-001',
+            customer: {
+                name: 'Test Customer',
+                address: '123 Test Street, Riyadh',
+                phone: '+966 50 123 4567',
+                email: 'test@example.com'
+            },
+            lineItems: [
+                {
+                    name: 'Web Development',
+                    quantity: 2,
+                    unitPrice: 5000,
+                    total: 10000
+                },
+                {
+                    name: 'Mobile App Development',
+                    quantity: 1,
+                    unitPrice: 15000,
+                    total: 15000
+                },
+                {
+                    name: 'UI/UX Design',
+                    quantity: 3,
+                    unitPrice: 2000,
+                    total: 6000
+                }
+            ],
+            discountType: 'percentage',
+            discountValue: 10,
+            vatRate: 15,
+            created_at: new Date().toISOString()
+        };
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        async function runCleanTest() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '⏳ Generating Clean PDF...';
+            
+            showStatus('🔄 Starting clean PDF generation test...', 'info');
+            
+            try {
+                showStatus('📦 Importing PDF generator module...', 'info');
+                const { generateQuotationPDF } = await import('./src/utils/pdfGenerator.ts');
+                
+                showStatus('🔄 Generating clean PDF with proper data formatting...', 'info');
+                const blob = await generateQuotationPDF(testQuote);
+                
+                showStatus(`✅ Clean PDF generated successfully!`, 'success');
+                showStatus(`📊 Blob size: ${blob.size} bytes`, 'success');
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-clean-quotation.pdf';
+                a.click();
+                
+                showStatus('📥 Clean PDF download initiated - Check for garbage values', 'success');
+                showStatus('🎉 Test completed! Verify the PDF has clean values.', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Error generating clean PDF: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Generate Clean PDF';
+            }
+        }
+
+        // Make runCleanTest available globally
+        window.runCleanTest = runCleanTest;
+        
+        showStatus('✅ Clean test page loaded successfully', 'info');
+        showStatus('📋 Ready to test clean PDF generation', 'info');
+    </script>
+</body>
+</html> 

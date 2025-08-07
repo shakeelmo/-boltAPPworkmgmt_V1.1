@@ -12,26 +12,26 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   // Calculate totals properly including discount
   const lineItems = quote.lineItems || [];
   const subtotal = lineItems.reduce((sum: number, item: any) => {
-    const quantity = item.quantity || 0;
-    const unitPrice = item.unitPrice || 0;
-    const itemTotal = item.total || (quantity * unitPrice) || 0;
+    const quantity = parseFloat(item.quantity) || 0;
+    const unitPrice = parseFloat(item.unitPrice) || 0;
+    const itemTotal = parseFloat(item.total) || (quantity * unitPrice) || 0;
     console.log('Item calculation:', { item, quantity, unitPrice, itemTotal });
     return sum + itemTotal;
   }, 0);
   
   // Calculate discount
   const discountType = quote.discountType || 'percentage';
-  const discountValue = quote.discountValue || 0;
+  const discountValue = parseFloat(String(quote.discountValue || 0));
   let discountAmount = 0;
   if (discountValue > 0) {
     if (discountType === 'percentage') {
       discountAmount = subtotal * (discountValue / 100);
     } else {
-      discountAmount = discountValue;
+      discountAmount = parseFloat(discountValue);
     }
   }
   
-  const vatRate = quote.vatRate || settings?.vatRate || 15; // 15% VAT
+  const vatRate = parseFloat(quote.vatRate) || parseFloat(settings?.vatRate) || 15; // 15% VAT
   const vatAmount = (subtotal - discountAmount) * (vatRate / 100);
   const total = subtotal - discountAmount + vatAmount;
   
@@ -229,15 +229,15 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
         currentY += tableHeaderHeight;
       }
 
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const itemTotal = item.total || (quantity * unitPrice) || 0;
+      const quantity = parseFloat(String(item.quantity || 0));
+      const unitPrice = parseFloat(String(item.unitPrice || 0));
+      const itemTotal = parseFloat(String(item.total || (quantity * unitPrice) || 0));
 
       // Add row
       pdf.text((index + 1).toString(), colX[0], currentY + 8);
       
       // Handle long descriptions with wrapping
-      const description = item.name || item.description || 'Item';
+      const description = String(item.name || item.description || 'Item');
       const descLines = pdf.splitTextToSize(description, colWidths[1] - 2);
       descLines.forEach((line: string, lineIndex: number) => {
         pdf.text(line, colX[1], currentY + 8 + (lineIndex * 4));
@@ -265,7 +265,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     
     pdf.setFontSize(10);
     pdf.setTextColor(51, 51, 51);
-    pdf.setFont(undefined, 'normal');
+    pdf.setFont('helvetica', 'normal');
 
     // Subtotal
     pdf.text('المجموع الفرعي / Subtotal', totalsX, currentY);
@@ -289,7 +289,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
     // Total
     pdf.setFontSize(12);
-    pdf.setFont(undefined, 'bold');
+    pdf.setFont('helvetica', 'bold');
     pdf.text('المجموع الكلي / Total', totalsX, currentY);
     pdf.text(`${total.toFixed(2)} ${SAR_SYMBOL}`, pageWidth - margin - 10, currentY, { align: 'right' });
     currentY += 15;
@@ -305,7 +305,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     // Terms and conditions
     pdf.setFontSize(10);
     pdf.setTextColor(51, 51, 51);
-    pdf.setFont(undefined, 'normal');
+    pdf.setFont('helvetica', 'normal');
     
     pdf.text('Terms and Conditions:', margin, currentY);
     currentY += 8;
