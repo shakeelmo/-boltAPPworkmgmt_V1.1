@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { X, User, Mail, Lock, Phone, Building, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Mail, Phone, Building, Shield } from 'lucide-react';
+import { User as UserType } from '../../types';
 
-interface CreateUserModalProps {
+interface EditUserModalProps {
+  user: UserType;
   onClose: () => void;
   onSubmit: (userData: any) => void;
 }
 
-export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalProps) {
+export default function EditUserModal({ user, onClose, onSubmit }: EditUserModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'staff',
+    role: 'user',
     phone: '',
     department: '',
     status: 'active'
@@ -29,6 +29,17 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
     { value: 'vendor', label: 'Vendor', description: 'Vendor access' }
   ];
 
+  useEffect(() => {
+    setFormData({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone || '',
+      department: user.department || '',
+      status: user.status
+    });
+  }, [user]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -40,16 +51,6 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ''))) {
@@ -72,14 +73,13 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
       await onSubmit({
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
-        password: formData.password,
         role: formData.role,
         phone: formData.phone.trim() || null,
         department: formData.department.trim() || null,
         status: formData.status
       });
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error updating user:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +96,7 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create New User</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Edit User</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -144,46 +144,6 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
               />
             </div>
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password *
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Enter password"
-              />
-            </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password *
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Confirm password"
-              />
-            </div>
-            {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
           </div>
 
           {/* Role */}
@@ -276,11 +236,11 @@ export default function CreateUserModal({ onClose, onSubmit }: CreateUserModalPr
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? 'Creating...' : 'Create User'}
+              {isSubmitting ? 'Updating...' : 'Update User'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+} 

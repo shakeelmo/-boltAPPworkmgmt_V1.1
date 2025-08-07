@@ -1,362 +1,369 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Users as UsersIcon, Shield, Mail, Phone, Edit, Trash2, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Filter, MoreVertical, Edit, Trash2, UserPlus, Shield, Mail, Phone, Building } from 'lucide-react';
 import { useUsers } from '../hooks/useUsers';
-import { CreateUserModal } from '../components/Users/CreateUserModal';
 import { useAuth } from '../contexts/AuthContext';
+import { hasPermission } from '../lib/permissions';
+import CreateUserModal from '../components/Users/CreateUserModal';
+import EditUserModal from '../components/Users/EditUserModal';
+import UserStatsCard from '../components/Users/UserStatsCard';
 import { User } from '../types';
-import toast from 'react-hot-toast';
 
 export function Users() {
-  const { user: currentUser, hasPermission } = useAuth();
-  const { users, isLoading, addUser, updateUser, deleteUser, resendInvitation } = useUsers();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const { user: currentUser } = useAuth();
+  const { users, isLoading, addUser, updateUser, deleteUser, refetch } = useUsers();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [resendingInvitation, setResendingInvitation] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [stats, setStats] = useState<any>(null);
+
+  const canManageUsers = hasPermission(currentUser?.role || '', 'users:manage');
+
+  useEffect(() => {
+    if (canManageUsers) {
+      fetchStats();
+    }
+  }, [canManageUsers]);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/users/stats/overview', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('smartuniit_token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.department?.toLowerCase().includes(searchTerm.toLowerCase());
+                         (user.phone && user.phone.includes(searchTerm));
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleCreateUser = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSubmit = async (userData: any) => {
     try {
       if (editingUser) {
         await updateUser(editingUser.id, userData);
-        toast.success('User updated successfully');
         setEditingUser(null);
       } else {
         await addUser(userData);
-        // Success message is handled in the addUser function
       }
+      setIsCreateModalOpen(false);
+      fetchStats(); // Refresh stats
     } catch (error) {
-      toast.error(editingUser ? 'Failed to update user' : 'Failed to create user');
-      console.error('Error managing user:', error);
+      console.error('Error handling user submission:', error);
+      alert('Failed to save user. Please try again.');
     }
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEdit = (user: User) => {
     setEditingUser(user);
     setIsCreateModalOpen(true);
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await deleteUser(userId);
-        toast.success('User deleted successfully');
+        await deleteUser(id);
+        fetchStats(); // Refresh stats
       } catch (error) {
-        toast.error('Failed to delete user');
         console.error('Error deleting user:', error);
+        alert('Failed to delete user. Please try again.');
       }
     }
   };
 
-  const handleResendInvitation = async (userId: string) => {
+  const handleResetPassword = async (userId: string) => {
+    const newPassword = prompt('Enter new password for user:');
+    if (!newPassword || newPassword.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
     try {
-      setResendingInvitation(userId);
-      await resendInvitation(userId);
+      const response = await fetch(`/api/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('smartuniit_token')}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+
+      if (response.ok) {
+        alert('Password reset successfully');
+      } else {
+        const error = await response.json();
+        alert(`Failed to reset password: ${error.error}`);
+      }
     } catch (error) {
-      // Error is handled in the resendInvitation function
-    } finally {
-      setResendingInvitation(null);
+      console.error('Error resetting password:', error);
+      alert('Failed to reset password. Please try again.');
     }
   };
 
-  const handleCloseModal = () => {
-    setIsCreateModalOpen(false);
-    setEditingUser(null);
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'superadmin': return 'bg-red-100 text-red-800';
+      case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'manager': return 'bg-blue-100 text-blue-800';
+      case 'staff': return 'bg-green-100 text-green-800';
+      case 'customer': return 'bg-orange-100 text-orange-800';
+      case 'vendor': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const roleColors = {
-    superadmin: 'bg-purple-100 text-purple-800',
-    admin: 'bg-red-100 text-red-800',
-    manager: 'bg-blue-100 text-blue-800',
-    staff: 'bg-green-100 text-green-800',
-    customer: 'bg-yellow-100 text-yellow-800',
-    vendor: 'bg-gray-100 text-gray-800',
+  const getStatusColor = (status: string) => {
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
-  const statusColors = {
-    active: 'bg-green-100 text-green-800',
-    inactive: 'bg-red-100 text-red-800',
-  };
-
-  const canManageUsers = hasPermission('users', 'manage');
-
-  if (isLoading) {
+  if (!canManageUsers) {
     return (
       <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-            ))}
-          </div>
-          <div className="h-96 bg-gray-200 rounded-xl"></div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h2 className="text-red-800 font-semibold">Access Denied</h2>
+          <p className="text-red-600">You don't have permission to access the Users module.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-dark-900">User Management</h1>
-          <p className="text-dark-600">Manage system users and their permissions</p>
-        </div>
-        {canManageUsers && (
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add User</span>
-          </button>
-        )}
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-dark-900">User Management</h1>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
+          Add User
+        </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-600">Total Users</p>
-              <p className="text-2xl font-bold text-dark-900">{users.length}</p>
-            </div>
-            <div className="p-3 bg-primary-100 rounded-lg">
-              <UsersIcon className="w-6 h-6 text-primary-600" />
-            </div>
-          </div>
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <UserStatsCard
+            title="Total Users"
+            value={stats.totalUsers}
+            icon={<UserPlus className="w-5 h-5" />}
+            color="blue"
+          />
+          <UserStatsCard
+            title="Active Users"
+            value={stats.activeUsers}
+            icon={<Shield className="w-5 h-5" />}
+            color="green"
+          />
+          <UserStatsCard
+            title="Inactive Users"
+            value={stats.inactiveUsers}
+            icon={<UserPlus className="w-5 h-5" />}
+            color="red"
+          />
+          <UserStatsCard
+            title="Roles"
+            value={stats.roleStats?.length || 0}
+            icon={<Shield className="w-5 h-5" />}
+            color="purple"
+          />
         </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">
-                {users.filter(u => u.status === 'active').length}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <UsersIcon className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
+      )}
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-600">Admins</p>
-              <p className="text-2xl font-bold text-red-600">
-                {users.filter(u => u.role === 'admin' || u.role === 'superadmin').length}
-              </p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-lg">
-              <Shield className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-600">This Month</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {users.filter(u => {
-                  const now = new Date();
-                  const userDate = new Date(u.createdAt);
-                  return userDate.getMonth() === now.getMonth() && userDate.getFullYear() === now.getFullYear();
-                }).length}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <UsersIcon className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      {/* Search and Filter Bar */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search users by name, email, or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-dark-600" />
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="all">All Roles</option>
-                <option value="superadmin">Super Admin</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="staff">Staff</option>
-                <option value="customer">Customer</option>
-                <option value="vendor">Vendor</option>
-              </select>
-            </div>
+          
+          <div className="flex gap-2">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Roles</option>
+              <option value="superadmin">Super Admin</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="staff">Staff</option>
+              <option value="customer">Customer</option>
+              <option value="vendor">Vendor</option>
+            </select>
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
                 </th>
-                {canManageUsers && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                )}
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-4">
-                        <span className="text-primary-600 font-medium text-sm">
-                          {user.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-dark-900">{user.name}</div>
-                        <div className="text-sm text-dark-500 flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          {user.email}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    Loading users...
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span className="text-primary-600 font-semibold">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
                         </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
                         {user.phone && (
-                          <div className="text-sm text-dark-500 flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {user.phone}
+                          <div className="flex items-center gap-1 mb-1">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
+                        {user.department && (
+                          <div className="flex items-center gap-1">
+                            <Building className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-500">{user.department}</span>
                           </div>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[user.role as keyof typeof roleColors]}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-dark-900">{user.department || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[user.status as keyof typeof statusColors]}`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-dark-900">
-                      {user.createdAt.toLocaleDateString()}
-                    </div>
-                  </td>
-                  {canManageUsers && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => handleEditUser(user)}
-                          className="text-primary-600 hover:text-primary-900 p-1 rounded"
-                          title="Edit User"
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="text-primary-600 hover:text-primary-900"
+                          title="Edit user"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleResendInvitation(user.id)}
-                          disabled={resendingInvitation === user.id}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Resend Invitation Email"
+                        <button
+                          onClick={() => handleResetPassword(user.id)}
+                          className="text-yellow-600 hover:text-yellow-900"
+                          title="Reset password"
                         >
-                          {resendingInvitation === user.id ? (
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
+                          <Shield className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {user.id !== currentUser?.id && (
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {filteredUsers.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UsersIcon className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-dark-900 mb-2">No users found</h3>
-          <p className="text-dark-600 mb-4">
-            {searchTerm || roleFilter !== 'all' 
-              ? 'Try adjusting your search or filter criteria'
-              : 'Get started by adding your first user'
-            }
-          </p>
-          {canManageUsers && !searchTerm && roleFilter === 'all' && (
-            <button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              Add User
-            </button>
-          )}
-        </div>
+      {/* Modals */}
+      {isCreateModalOpen && (
+        editingUser ? (
+          <EditUserModal
+            user={editingUser}
+            onClose={() => {
+              setIsCreateModalOpen(false);
+              setEditingUser(null);
+            }}
+            onSubmit={handleSubmit}
+          />
+        ) : (
+          <CreateUserModal
+            onClose={() => setIsCreateModalOpen(false)}
+            onSubmit={handleSubmit}
+          />
+        )
       )}
-
-      {/* Create/Edit User Modal */}
-      <CreateUserModal
-        isOpen={isCreateModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleCreateUser}
-        editUser={editingUser}
-      />
     </div>
   );
 }

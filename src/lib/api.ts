@@ -43,17 +43,24 @@ class ApiService {
       headers,
     };
 
-    console.log('API request:', {
+    console.log('API request details:', {
       url,
       method: options.method || 'GET',
       headers: Object.keys(headers),
-      hasBody: !!options.body
+      hasBody: !!options.body,
+      body: options.body ? JSON.parse(options.body as string) : null
     });
 
     try {
+      console.log('Starting fetch request to:', url);
       const response = await fetch(url, config);
       
-      console.log('API response status:', response.status);
+      console.log('API response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: response.url
+      });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -64,8 +71,15 @@ class ApiService {
       const data = await response.json();
       console.log('API success response:', data);
       return data;
-    } catch (error) {
-      console.error('API request failed:', error);
+    } catch (error: any) {
+      console.error('API request failed with details:', {
+        error: error,
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        url: url,
+        method: options.method || 'GET'
+      });
       throw error;
     }
   }
@@ -405,10 +419,23 @@ class ApiService {
     return this.request<{ user: any }>(`/users/${id}`);
   }
 
+  async createUser(data: any) {
+    return this.request<{ user: any }>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async updateUser(id: string, data: any) {
     return this.request<{ user: any }>(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id: string) {
+    return this.request<{ message: string }>(`/users/${id}`, {
+      method: 'DELETE',
     });
   }
 
