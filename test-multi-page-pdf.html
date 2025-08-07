@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Page PDF Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1E40AF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .test-info h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .test-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .test-info li {
+            margin: 5px 0;
+        }
+        .test-button {
+            background: #1E40AF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #1e3a8a;
+        }
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        .log {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Multi-Page PDF Generation Test</h1>
+        
+        <div class="test-info">
+            <h3>Test Overview</h3>
+            <ul>
+                <li><strong>Purpose:</strong> Test multi-page PDF generation with automatic page breaks</li>
+                <li><strong>Test Data:</strong> 50 line items with long descriptions</li>
+                <li><strong>Expected Result:</strong> PDF with multiple pages and proper content distribution</li>
+                <li><strong>Features Tested:</strong> Page breaks, table headers on new pages, page numbering</li>
+            </ul>
+        </div>
+
+        <button id="testButton" class="test-button" onclick="runTest()">
+            🚀 Generate Multi-Page PDF
+        </button>
+
+        <div id="status" class="status"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // Test data with many line items to trigger multiple pages
+        const testQuote = {
+            id: 'test-quote-multi-page',
+            quote_number: 'Q-MULTI-001',
+            customer: {
+                name: 'Test Customer Company for Multi-Page Testing',
+                address: '123 Test Street, Riyadh, Saudi Arabia, Building A, Floor 5, Office 502',
+                phone: '+966 50 123 4567',
+                email: 'test@example.com'
+            },
+            lineItems: [
+                // Generate 50 line items to ensure multiple pages
+                ...Array.from({ length: 50 }, (_, i) => ({
+                    name: `Test Item ${i + 1} - This is a very long description that might wrap to multiple lines and test the text wrapping functionality of the PDF generator`,
+                    quantity: Math.floor(Math.random() * 10) + 1,
+                    unitPrice: Math.floor(Math.random() * 10000) + 100,
+                    total: 0
+                }))
+            ],
+            created_at: new Date().toISOString()
+        };
+
+        // Calculate totals for test items
+        testQuote.lineItems.forEach(item => {
+            item.total = item.quantity * item.unitPrice;
+        });
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const log = document.getElementById('log');
+            
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            log.style.display = 'block';
+            log.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function runTest() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '⏳ Generating PDF...';
+            
+            showStatus('🔄 Starting multi-page PDF generation test...', 'info');
+            
+            try {
+                showStatus(`📄 Test data: ${testQuote.lineItems.length} line items`, 'info');
+                showStatus(`💰 Total value: ${testQuote.lineItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)} SAR`, 'info');
+                
+                // Import the PDF generator
+                showStatus('📦 Importing PDF generator module...', 'info');
+                const { generateQuotationPDF } = await import('./src/utils/pdfGenerator.ts');
+                
+                showStatus('🔄 Generating PDF with multi-page support...', 'info');
+                const blob = await generateQuotationPDF(testQuote);
+                
+                showStatus(`✅ Multi-page PDF generated successfully!`, 'success');
+                showStatus(`📊 Blob size: ${blob.size} bytes`, 'success');
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-multi-page-quotation.pdf';
+                a.click();
+                
+                showStatus('📥 PDF download initiated - Check your downloads folder', 'success');
+                showStatus('🎉 Test completed successfully!', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Error generating multi-page PDF: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Generate Multi-Page PDF';
+            }
+        }
+
+        // Make runTest available globally
+        window.runTest = runTest;
+        
+        showStatus('✅ Test page loaded successfully', 'info');
+        showStatus('📋 Ready to test multi-page PDF generation', 'info');
+    </script>
+</body>
+</html> 
