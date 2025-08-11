@@ -10,7 +10,7 @@ import { generateQuotationPDF } from '../../utils/pdfGenerator';
 interface CreateQuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (quote: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'quoteNumber'>) => void;
+  onSubmit: (quote: Omit<Quote, 'id' | 'createdAt' | 'updatedAt'>) => void;
   editQuote?: Quote | null;
 }
 
@@ -26,6 +26,18 @@ const RiyalSymbol = ({ className = "w-4 h-4" }: { className?: string }) => (
 export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: CreateQuoteModalProps) {
   const { user } = useAuth();
   const { customers, services, settings, addCustomer } = useQuotations();
+  
+  // Function to generate unique quotation number: DD-MM-YYYY-HHMM (22 characters)
+  const generateQuotationNumber = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    return `${day}-${month}-${year}-${hours}${minutes}`;
+  };
   
   const [formData, setFormData] = useState({
     customerId: '',
@@ -225,7 +237,7 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
       total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
     }));
 
-    const quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt' | 'quoteNumber'> = {
+    const quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt'> = {
       customerId: formData.customerId,
       status: formData.status,
       lineItems: updatedLineItems,
@@ -242,6 +254,7 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
       terms: formData.terms,
       termsAr: formData.termsAr,
       assignedTo: formData.assignedTo,
+      quoteNumber: editQuote ? editQuote.quoteNumber : generateQuotationNumber(),
       createdBy: user?.id || '',
     };
     
@@ -269,8 +282,8 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
     }
     const { subtotal, discountAmount, vatAmount, total, vatRate } = calculateTotals();
     
-    // Use actual quote number if editing, otherwise use a placeholder
-    const quoteNumber = editQuote?.quoteNumber || 'DRAFT';
+    // Use actual quote number if editing, otherwise generate new one
+    const quoteNumber = editQuote?.quoteNumber || generateQuotationNumber();
     
     const quoteData: Quote = {
       id: editQuote?.id || '',
@@ -344,6 +357,40 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Quotation Number (Auto-generated) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-2">
+                Quotation Number *
+              </label>
+              <input
+                type="text"
+                value={editQuote ? editQuote.quoteNumber : generateQuotationNumber()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                readOnly
+                disabled
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Auto-generated: DD-MM-YYYY-HHMM format (22 characters)
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-2">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Quote['status'] }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+
           {/* Customer Selection */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
@@ -377,34 +424,17 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-dark-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Quote['status'] }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark-700 mb-2">
-                  Valid Until
-                </label>
-                <input
-                  type="date"
-                  value={formData.validUntil}
-                  onChange={(e) => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-2">
+                Valid Until
+              </label>
+              <input
+                type="date"
+                value={formData.validUntil}
+                onChange={(e) => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                required
+              />
             </div>
           </div>
 
@@ -686,32 +716,63 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
             </div>
           </div>
 
-          {/* Terms & Conditions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-dark-700 mb-2">
-                Terms & Conditions (English)
-              </label>
-              <textarea
-                value={formData.terms}
-                onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                rows={3}
-                placeholder="Terms and conditions for this quote"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-700 mb-2">
-                Terms & Conditions (Arabic) / الشروط والأحكام
-              </label>
-              <textarea
-                value={formData.termsAr}
-                onChange={(e) => setFormData(prev => ({ ...prev, termsAr: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                rows={3}
-                placeholder="الشروط والأحكام لهذا العرض"
-                dir="rtl"
-              />
+          {/* Terms & Conditions - Fully Customizable */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-dark-900 mb-3 flex items-center">
+              📝 Terms & Conditions - Fully Customizable
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Customize terms for each customer. You can modify payment terms, delivery schedules, warranty conditions, etc.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-dark-700 mb-2">
+                  Terms & Conditions (English) *
+                </label>
+                <textarea
+                  value={formData.terms}
+                  onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="Payment terms: 30 days from invoice date
+All prices are in Saudi Riyals (SAR)
+VAT is included in all prices
+This quotation is valid for 30 days
+Delivery will be made within 7-14 business days
+Warranty: 12 months from delivery date"
+                />
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-500">💡 <strong>Common terms:</strong></p>
+                  <p className="text-xs text-gray-500">• Payment: 30/60/90 days</p>
+                  <p className="text-xs text-gray-500">• Validity: 15/30/60 days</p>
+                  <p className="text-xs text-gray-500">• Delivery: 7-14/15-30 business days</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-700 mb-2">
+                  Terms & Conditions (Arabic) / الشروط والأحكام *
+                </label>
+                <textarea
+                  value={formData.termsAr}
+                  onChange={(e) => setFormData(prev => ({ ...prev, termsAr: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="شروط الدفع: 30 يوم من تاريخ الفاتورة
+جميع الأسعار بالريال السعودي
+ضريبة القيمة المضافة مشمولة في جميع الأسعار
+هذا العرض صالح لمدة 30 يوم
+سيتم التسليم خلال 7-14 يوم عمل
+الضمان: 12 شهر من تاريخ التسليم"
+                  dir="rtl"
+                />
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-500">💡 <strong>نصائح:</strong></p>
+                  <p className="text-xs text-gray-500">• الدفع: 30/60/90 يوم</p>
+                  <p className="text-xs text-gray-500">• الصلاحية: 15/30/60 يوم</p>
+                  <p className="text-xs text-gray-500">• التسليم: 7-14/15-30 يوم عمل</p>
+                </div>
+              </div>
             </div>
           </div>
 
