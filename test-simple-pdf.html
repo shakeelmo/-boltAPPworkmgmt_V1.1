@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple PDF Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1E40AF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-button {
+            background: #1E40AF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #1e3a8a;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Simple PDF Test</h1>
+        
+        <p>This is a simple test to verify the PDF generator is working correctly.</p>
+        
+        <button id="testButton" class="test-button" onclick="runSimpleTest()">
+            🚀 Generate Simple PDF
+        </button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script type="module">
+        // Simple test data
+        const simpleQuote = {
+            id: 'simple-test',
+            quote_number: 'Q-SIMPLE-001',
+            customer: {
+                name: 'Simple Test Customer',
+                address: '123 Test Street, Riyadh',
+                phone: '+966 50 123 4567',
+                email: 'test@example.com'
+            },
+            lineItems: [
+                {
+                    name: 'Web Development',
+                    quantity: 1,
+                    unitPrice: 5000,
+                    total: 5000
+                },
+                {
+                    name: 'Mobile App Development',
+                    quantity: 1,
+                    unitPrice: 10000,
+                    total: 10000
+                }
+            ],
+            created_at: new Date().toISOString()
+        };
+
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        async function runSimpleTest() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '⏳ Generating...';
+            
+            try {
+                showStatus('🔄 Testing PDF generation...', 'success');
+                
+                // Try to import the PDF generator
+                const { generateQuotationPDF } = await import('/src/utils/pdfGenerator.ts');
+                
+                showStatus('📦 PDF generator imported successfully', 'success');
+                
+                // Generate PDF
+                const blob = await generateQuotationPDF(simpleQuote);
+                
+                showStatus('✅ PDF generated successfully!', 'success');
+                
+                // Download the PDF
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'simple-test-quotation.pdf';
+                a.click();
+                
+                showStatus('📥 PDF downloaded successfully!', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Generate Simple PDF';
+            }
+        }
+
+        // Make function available globally
+        window.runSimpleTest = runSimpleTest;
+        
+        showStatus('✅ Page loaded successfully - Ready to test', 'success');
+    </script>
+</body>
+</html> 

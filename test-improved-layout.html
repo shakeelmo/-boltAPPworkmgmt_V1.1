@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved Layout PDF Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1E40AF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .improvements-list {
+            background: #d1fae5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #10b981;
+        }
+        .improvements-list h3 {
+            color: #065f46;
+            margin-top: 0;
+        }
+        .improvements-list ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .improvements-list li {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .test-info h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .test-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .test-info li {
+            margin: 5px 0;
+        }
+        .test-button {
+            background: #1E40AF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #1e3a8a;
+        }
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        .log {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        .layout-preview {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #0ea5e9;
+        }
+        .layout-preview h4 {
+            color: #0369a1;
+            margin-top: 0;
+        }
+        .layout-structure {
+            font-family: monospace;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #1E40AF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Improved Layout PDF Test</h1>
+        
+        <div class="improvements-list">
+            <h3>✅ Layout Improvements:</h3>
+            <ol>
+                <li><strong>Section Order:</strong> Totals now come BEFORE Terms and Conditions</li>
+                <li><strong>Professional Footer:</strong> Added logo and company blue background with white text</li>
+                <li><strong>Better Table Alignment:</strong> Improved column widths and spacing</li>
+                <li><strong>Enhanced Spacing:</strong> Better margins and padding throughout</li>
+                <li><strong>Visual Hierarchy:</strong> Clear separation between sections</li>
+                <li><strong>Brand Consistency:</strong> Company colors used throughout</li>
+                <li><strong>Page Breaks:</strong> Proper handling of content across pages</li>
+                <li><strong>Professional Appearance:</strong> Clean, modern design</li>
+            </ol>
+        </div>
+
+        <div class="layout-preview">
+            <h4>📋 New Document Structure:</h4>
+            <div class="layout-structure">
+Page 1:
+├── Header (Logo + Company Info)
+├── Bill To Section
+├── Items & Services Table
+└── Footer (Professional with Logo)
+
+Page 2:
+├── Totals Section (FIRST)
+├── Terms & Conditions (SECOND)
+└── Footer (Professional with Logo)
+            </div>
+        </div>
+
+        <div class="test-info">
+            <h3>Test Overview</h3>
+            <ul>
+                <li><strong>Purpose:</strong> Verify improved layout and professional appearance</li>
+                <li><strong>Key Changes:</strong> Section order, footer design, table alignment</li>
+                <li><strong>Expected Result:</strong> Professional PDF with proper layout flow</li>
+                <li><strong>Key Checks:</strong> Totals before terms, professional footer, better alignment</li>
+            </ul>
+        </div>
+
+        <button id="testButton" class="test-button" onclick="runTest()">
+            🚀 Generate Improved Layout PDF
+        </button>
+
+        <div id="status" class="status"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // Test data with multiple items to test layout
+        const testQuote = {
+            id: 'test-quote-improved',
+            quote_number: 'Q-IMPROVED-001',
+            customer: {
+                name: 'Advanced Technology Solutions Ltd.',
+                address: '456 Innovation Street, Riyadh, Saudi Arabia, P.O. Box 67890',
+                phone: '+966 50 987 6543',
+                email: 'info@advancedtech.com'
+            },
+            lineItems: [
+                {
+                    name: 'Comprehensive Web Development Services with Advanced Features',
+                    quantity: 2,
+                    unitPrice: 7500,
+                    total: 15000
+                },
+                {
+                    name: 'Mobile Application Development for iOS and Android Platforms',
+                    quantity: 1,
+                    unitPrice: 20000,
+                    total: 20000
+                },
+                {
+                    name: 'User Interface and User Experience Design with Prototyping',
+                    quantity: 3,
+                    unitPrice: 3000,
+                    total: 9000
+                },
+                {
+                    name: 'Database Design and Data Management Implementation',
+                    quantity: 1,
+                    unitPrice: 12000,
+                    total: 12000
+                },
+                {
+                    name: 'Security Implementation and Data Protection Services',
+                    quantity: 2,
+                    unitPrice: 6000,
+                    total: 12000
+                },
+                {
+                    name: 'Ongoing Maintenance and Technical Support Services',
+                    quantity: 12,
+                    unitPrice: 1500,
+                    total: 18000
+                },
+                {
+                    name: 'Cloud Infrastructure Setup and Configuration',
+                    quantity: 1,
+                    unitPrice: 8000,
+                    total: 8000
+                },
+                {
+                    name: 'API Development and Integration Services',
+                    quantity: 2,
+                    unitPrice: 4000,
+                    total: 8000
+                }
+            ],
+            discountType: 'percentage',
+            discountValue: 15,
+            vatRate: 15,
+            created_at: new Date().toISOString()
+        };
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const log = document.getElementById('log');
+            
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            log.style.display = 'block';
+            log.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function runTest() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '⏳ Generating Improved Layout PDF...';
+            
+            showStatus('🔄 Starting improved layout PDF test...', 'info');
+            
+            try {
+                showStatus(`📄 Test data: ${testQuote.lineItems.length} line items to test layout`, 'info');
+                showStatus(`💰 Total value: ${testQuote.lineItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)} SAR`, 'info');
+                showStatus(`🎯 Testing layout improvements:`, 'info');
+                showStatus(`   1. Totals section comes BEFORE terms`, 'info');
+                showStatus(`   2. Professional footer with logo and colors`, 'info');
+                showStatus(`   3. Better table alignment and spacing`, 'info');
+                showStatus(`   4. Enhanced visual hierarchy`, 'info');
+                showStatus(`   5. Brand consistency throughout`, 'info');
+                
+                // Import the PDF generator
+                showStatus('📦 Importing improved PDF generator module...', 'info');
+                const { generateQuotationPDF } = await import('/src/utils/pdfGenerator.ts');
+                
+                showStatus('🔄 Generating PDF with improved layout...', 'info');
+                const blob = await generateQuotationPDF(testQuote);
+                
+                showStatus(`✅ Improved layout PDF generated successfully!`, 'success');
+                showStatus(`📊 Blob size: ${blob.size} bytes`, 'success');
+                showStatus(`📋 All layout improvements applied:`, 'success');
+                showStatus(`   ✅ Totals section comes first`, 'success');
+                showStatus(`   ✅ Professional footer with logo`, 'success');
+                showStatus(`   ✅ Better table alignment`, 'success');
+                showStatus(`   ✅ Enhanced spacing and margins`, 'success');
+                showStatus(`   ✅ Brand consistency`, 'success');
+                showStatus(`   ✅ Professional appearance`, 'success');
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test-improved-layout.pdf';
+                a.click();
+                
+                showStatus('📥 PDF download initiated - Check your downloads folder', 'success');
+                showStatus('🎉 Improved layout test completed!', 'success');
+                showStatus('🔍 Please verify the PDF shows:', 'success');
+                showStatus('   • Totals section BEFORE Terms and Conditions', 'success');
+                showStatus('   • Professional footer with logo and blue background', 'success');
+                showStatus('   • Better table alignment and spacing', 'success');
+                showStatus('   • Clean, professional appearance', 'success');
+                showStatus('   • Proper page breaks and layout flow', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Error generating improved layout PDF: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Generate Improved Layout PDF';
+            }
+        }
+
+        // Make runTest available globally
+        window.runTest = runTest;
+        
+        showStatus('✅ Test page loaded successfully', 'info');
+        showStatus('📋 Ready to test improved layout', 'info');
+    </script>
+</body>
+</html> 

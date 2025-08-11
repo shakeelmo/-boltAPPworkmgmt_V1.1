@@ -198,11 +198,11 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
   // Function to add professional header
   const addHeader = () => {
-    // 1. LOGO POSITIONING - Left side, 25mm × 25mm as requested
-    const logoSize = 25; // Increased to 25mm × 25mm for better visibility
+    // 1. LOGO POSITIONING - Left side, smaller size
+    const logoSize = 20; // Reduced from 25 to 20
     const logoY = currentY + 2;
     try {
-      pdf.addImage(SMART_UNIVERSE_LOGO_BASE64, 'JPEG', margin, logoY, logoSize, logoSize);
+      pdf.addImage(SMART_UNIVERSE_LOGO_BASE64, 'JPEG', margin, logoY, logoSize, 12);
     } catch (error) {
       console.warn('Could not add header logo:', error);
     }
@@ -245,14 +245,14 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     addText('CR: 1010973808', companyX, regDetailsY + 3, { fontSize: 8, color: [51, 51, 51] });
     
     // RIGHT PART: Quotation Details Box - Far right, just above header line to avoid overlap
-    const quoteBoxWidth = 55; // reduced width to better fit text content and prevent overlap
-    const quoteBoxHeight = 14; // reduced height to better fit text content and prevent overlap
+    const quoteBoxWidth = 65; // reduced width to better fit text content
+    const quoteBoxHeight = 16; // reduced height to better fit text content
 
     // Calculate the bottom of the company info block
     const companyBottomY = (regDetailsY + 6);
 
     // Place the quotation box so its bottom sits exactly on the header line area on the right corner
-    const rightPadding = -5; // increased negative padding to move it further right, right before page end
+    const rightPadding = -2; // negative padding to move it beyond the margin, right before page end
     const quoteDetailsX = pageWidth - margin - quoteBoxWidth - rightPadding; // anchor to right edge
     const quoteDetailsY = companyBottomY - quoteBoxHeight; // position it exactly on top of the header separator line
 
@@ -272,9 +272,9 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
     // Labels and values - adjusted for smaller box and better text alignment
     addText('Quotation #:', quoteDetailsX + 2, quoteDetailsY + 3, { fontSize: 7, fontStyle: 'bold', color: [51, 51, 51] });
-    addText(quote.quote_number || 'Q-001', quoteDetailsX + 25, quoteDetailsY + 3, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
+    addText(quote.quote_number || 'Q-001', quoteDetailsX + 28, quoteDetailsY + 3, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
 
-    addText('Date:', quoteDetailsX + 2, quoteDetailsY + 8, { fontSize: 7, fontStyle: 'bold', color: [51, 51, 51] });
+    addText('Date:', quoteDetailsX + 2, quoteDetailsY + 9, { fontSize: 7, fontStyle: 'bold', color: [51, 51, 51] });
     const quoteDate = quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -284,7 +284,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       month: 'long',
       day: 'numeric'
     });
-    addText(quoteDate, quoteDetailsX + 25, quoteDetailsY + 8, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
+    addText(quoteDate, quoteDetailsX + 28, quoteDetailsY + 9, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
     
     // 5. CALCULATE HEADER HEIGHT - Dynamic based on content
     const companySectionHeight = regDetailsY + 6;
@@ -706,8 +706,8 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     pdf.line(endSectionCenterX, currentY, endSectionCenterX + endSectionWidth, currentY);
     currentY += 8;
     
-    // END OF QUOTATION text - centered and professional with asterisks
-    addText('**************** End of Quotation *******************', pageWidth / 2, currentY, { 
+    // END OF QUOTATIONS text - centered and professional with asterisks
+    addText('**************** End of Quotations *******************', pageWidth / 2, currentY, { 
       fontSize: 11, 
       fontStyle: 'bold', 
       color: [156, 163, 175],

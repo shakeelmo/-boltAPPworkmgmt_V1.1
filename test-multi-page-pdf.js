@@ -70,6 +70,6 @@ testMultiPagePDF();
 fs.writeFileSync('test-multi-page-pdf.js', testScript);
 
 console.log('✅ Test script created: test-multi-page-pdf.js');
-console.log('🌐 Open http://localhost:5174/test-multi-page-pdf.html to test');
+console.log('🌐 Open http://localhost:5173/test-multi-page-pdf.html to test');
 console.log('📋 Or run this in browser console:');
 console.log(testScript); 
