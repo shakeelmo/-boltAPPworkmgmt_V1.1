@@ -740,7 +740,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       
       // Company info in white text with improved readability
       addText('Smart Universe for Communications and Information Technology', pageWidth / 2, footerY + 7, { fontSize: 9, color: [255, 255, 255], align: 'center' }); // Increased from 8
-      addText('Riyadh, Saudi Arabia | Phone: +966 11 123 4567 | Email: info@smartuniit.com', pageWidth / 2, footerY + 11, { fontSize: 8, color: [255, 255, 255], align: 'center' }); // Increased from 7
+              addText('Riyadh, Saudi Arabia | Phone Number: +966 550188288 | Email: info@smartuniit.com', pageWidth / 2, footerY + 11, { fontSize: 8, color: [255, 255, 255], align: 'center' }); // Increased from 7
       
       // Thank you message and page numbers with better sizing
       addText('Thank you for your business!', pageWidth / 2, footerY + 17, { fontSize: 9, fontStyle: 'bold', color: [255, 255, 255], align: 'center' }); // Increased from 8

@@ -401,7 +401,7 @@ export class PDFExportUtils {
                 Smart Universe Communication & IT
               </p>
               <p style="margin: 0 0 4px 0;">King Fahd Road, Riyadh 12345, Saudi Arabia</p>
-              <p style="margin: 0 0 4px 0;">Phone: +966 11 123 4567</p>
+              <p style="margin: 0 0 4px 0;">Phone Number: +966 550188288</p>
               <p style="margin: 0 0 4px 0;">Email: info@smartuniit.com</p>
               <p style="margin: 0 0 4px 0;">VAT: 300987654321003</p>
             </div>
@@ -558,7 +558,7 @@ export class PDFExportUtils {
                 Smart Universe Communication & IT
               </p>
               <p style="margin: 0 0 4px 0;">King Fahd Road, Riyadh 12345, Saudi Arabia</p>
-              <p style="margin: 0 0 4px 0;">Phone: +966 11 123 4567</p>
+              <p style="margin: 0 0 4px 0;">Phone Number: +966 550188288</p>
               <p style="margin: 0 0 4px 0;">Email: info@smartuniit.com</p>
             </div>
           </div>

@@ -75,7 +75,7 @@ const QuotePDFPreview: React.FC<QuotePDFPreviewProps> = ({ quote, customer, sett
                 <h3 className="text-lg font-bold text-primary-600">SMART UNIVERSE</h3>
                 <p className="text-xs text-dark-500">
                   FOR COMMUNICATIONS AND INFORMATION TECHNOLOGY<br/>
-                  King Abdulaziz Road, Riyadh | Phone: +966 50 123 4567 | Email: info@smartuniit.com
+                  King Abdulaziz Road, Riyadh | Phone Number: +966 550188288 | Email: info@smartuniit.com
                 </p>
               </div>
             </div>

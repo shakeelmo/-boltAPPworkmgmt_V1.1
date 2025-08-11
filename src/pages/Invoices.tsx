@@ -81,7 +81,7 @@ export function Invoices() {
       const customer = customers.find(c => c.id === invoice.customerId) || { 
         name: 'Unknown Customer', 
         email: 'customer@example.com', 
-        phone: '+966 11 123 4567',
+        phone: '+966 550188288',
         address: 'Customer Address'
       };
       

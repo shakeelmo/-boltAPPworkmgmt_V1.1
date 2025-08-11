@@ -140,13 +140,13 @@ const mockProposals: SimpleProposal[] = [
 ];
 
 const mockCustomers = [
-  { id: '1', name: 'Saudi Telecom Company', email: 'contact@stc.com.sa', phone: '+966 11 123 4567', company: 'STC' },
+          { id: '1', name: 'Saudi Telecom Company', email: 'contact@stc.com.sa', phone: '+966 550188288', company: 'STC' },
   { id: '2', name: 'SABIC Industries', email: 'info@sabic.com', phone: '+966 13 987 6543', company: 'SABIC' },
   { id: '3', name: 'ARAMCO Digital', email: 'digital@aramco.com', phone: '+966 12 555 7890', company: 'ARAMCO' },
 ];
 
 const mockVendors = [
-  { id: '1', name: 'TechCorp Solutions', email: 'contact@techcorp.com', phone: '+966 11 123 4567', contactPerson: 'Ahmed Al-Rashid' },
+          { id: '1', name: 'TechCorp Solutions', email: 'contact@techcorp.com', phone: '+966 550188288', contactPerson: 'Ahmed Al-Rashid' },
   { id: '2', name: 'CloudNet Services', email: 'info@cloudnet.sa', phone: '+966 13 987 6543', contactPerson: 'Fatima Al-Zahra' },
 ];
 
