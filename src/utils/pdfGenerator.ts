@@ -272,7 +272,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
     // Labels and values - adjusted for smaller box and better text alignment
     addText('Quotation #:', quoteDetailsX + 2, quoteDetailsY + 3, { fontSize: 7, fontStyle: 'bold', color: [51, 51, 51] });
-    addText(quote.quote_number || 'Q-001', quoteDetailsX + 25, quoteDetailsY + 3, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
+    addText(quote.quoteNumber || quote.quote_number || 'Q-001', quoteDetailsX + 25, quoteDetailsY + 3, { fontSize: 8, fontStyle: 'bold', color: [30, 64, 175] });
 
     addText('Date:', quoteDetailsX + 2, quoteDetailsY + 8, { fontSize: 7, fontStyle: 'bold', color: [51, 51, 51] });
     const quoteDate = quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-US', {
@@ -771,7 +771,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 export async function testPDFGeneration() {
   const testQuote = {
     id: 'test-quote-123',
-    quote_number: 'Q-TEST-001',
+    quoteNumber: '11-08-2025-1430', // New format: DD-MM-YYYY-HHMM
     customer: {
       name: 'Test Customer Company',
       address: '123 Test Street, Riyadh, Saudi Arabia',
