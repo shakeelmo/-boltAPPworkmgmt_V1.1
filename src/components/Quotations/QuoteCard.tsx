@@ -7,6 +7,7 @@ import { formatCurrency } from '../../utils/format';
 import { generateQuotationPDF } from '../../utils/pdfGenerator';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
+import { SaudiRiyalSymbol } from '../SaudiRiyalSymbol';
 
 // Helper function to safely format dates
 const formatDate = (dateValue: any): string => {
@@ -82,13 +83,9 @@ const statusLabels = {
   rejected: 'Rejected',
 };
 
+// Using the new Saudi Riyal symbol component
 const RiyalSymbol = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <img 
-    src="/Riyal_symbol.png" 
-    alt="SAR" 
-    className={`inline-block ${className}`}
-    style={{ background: 'transparent' }}
-  />
+  <SaudiRiyalSymbol className={className} />
 );
 
 export function QuoteCard({ quote, customer, onEdit, onDuplicate, onViewPDF }: QuoteCardProps) {

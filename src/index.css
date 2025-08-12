@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Saudi Riyal Symbol Font */
+@import '/node_modules/@abdulrysr/saudi-riyal-new-symbol-font/style.css';
+
 /* Custom styles for SMART UNIVERSE logo */
 .smart-text {
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
