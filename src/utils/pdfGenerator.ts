@@ -397,7 +397,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
     // Improved column widths for better professional appearance
     // Total table width: 175 (optimized for A4 page)
-    const colWidths = [20, 75, 30, 35, 35]; // Better balanced proportions
+    const colWidths = [20, 100, 30, 35, 35]; // Extended description column for better visibility
     const tableStartX = margin;
     const tableEndX = tableStartX + colWidths.reduce((sum, width) => sum + width, 0);
     
@@ -492,15 +492,11 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       // Clean and format description - remove excessive line breaks
       let description = String(item.name).replace(/\n+/g, ' ').trim();
       
-      // Limit description length and add ellipsis if needed
-      if (description.length > 70) {
-        description = description.substring(0, 67) + '...';
-      }
-      
-      const descLines = pdf.splitTextToSize(description, colWidths[1] - 4);
-      // Limit to maximum 2 lines to prevent excessive row height
-      const limitedDescLines = descLines.slice(0, 2);
-      const rowActualHeight = Math.max(rowHeight, Math.min(limitedDescLines.length * 4 + 6, 22));
+      // Allow longer descriptions with better text wrapping
+      const descLines = pdf.splitTextToSize(description, colWidths[1] - 6);
+      // Allow up to 3 lines for better description visibility
+      const limitedDescLines = descLines.slice(0, 3);
+      const rowActualHeight = Math.max(rowHeight, Math.min(limitedDescLines.length * 4 + 8, 30));
 
       // Add alternating row background for professional appearance
       if (index % 2 === 1) {
@@ -526,7 +522,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       
       // Handle descriptions with controlled wrapping within cell bounds
       limitedDescLines.forEach((line: string, lineIndex: number) => {
-        addText(line, colX[1] + 2, currentY + 9 + (lineIndex * 4), { fontSize: 10, color: [51, 51, 51] });
+        addText(line, colX[1] + 3, currentY + 9 + (lineIndex * 4), { fontSize: 9, color: [51, 51, 51] });
       });
       
       // Format numbers with thousands separators and proper alignment
