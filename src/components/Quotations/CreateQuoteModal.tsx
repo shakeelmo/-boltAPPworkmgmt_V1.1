@@ -42,7 +42,7 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
     validUntil: '',
     notes: '',
     notesAr: '',
-    terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (﷼)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
+    terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (SAR)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
     termsAr: 'شروط الدفع: 30 يوم من تاريخ الفاتورة\nجميع الأسعار بالريال السعودي\nضريبة القيمة المضافة مشمولة في جميع الأسعار\nهذا العرض صالح لمدة 30 يوم\nسيتم التسليم خلال 7-14 يوم عمل',
     assignedTo: user?.id || '',
     discountType: 'percentage' as 'percentage' | 'fixed',
@@ -94,7 +94,7 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
         validUntil: defaultValidUntil.toISOString().split('T')[0],
         notes: '',
         notesAr: '',
-        terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (﷼)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
+        terms: 'Payment terms: 30 days from invoice date\nAll prices are in Saudi Riyals (SAR)\nVAT is included in all prices\nThis quotation is valid for 30 days\nDelivery will be made within 7-14 business days',
         termsAr: 'شروط الدفع: 30 يوم من تاريخ الفاتورة\nجميع الأسعار بالريال السعودي\nضريبة القيمة المضافة مشمولة في جميع الأسعار\nهذا العرض صالح لمدة 30 يوم\nسيتم التسليم خلال 7-14 يوم عمل',
         assignedTo: user?.id || '',
         discountType: 'percentage',
@@ -733,7 +733,7 @@ export function CreateQuoteModal({ isOpen, onClose, onSubmit, editQuote }: Creat
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   rows={4}
                   placeholder="Payment terms: 30 days from invoice date
-All prices are in Saudi Riyals (﷼)
+All prices are in Saudi Riyals (SAR)
 VAT is included in all prices
 This quotation is valid for 30 days
 Delivery will be made within 7-14 business days
