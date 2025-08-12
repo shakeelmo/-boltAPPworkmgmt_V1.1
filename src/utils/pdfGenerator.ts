@@ -397,7 +397,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
     // Improved column widths for better professional appearance
     // Total table width: 175 (optimized for A4 page)
-    const colWidths = [20, 100, 30, 35, 35]; // Extended description column for better visibility
+    const colWidths = [18, 85, 25, 32, 30]; // Optimized for A4 page fit with professional readability
     const tableStartX = margin;
     const tableEndX = tableStartX + colWidths.reduce((sum, width) => sum + width, 0);
     
@@ -493,10 +493,10 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       let description = String(item.name).replace(/\n+/g, ' ').trim();
       
       // Allow longer descriptions with better text wrapping
-      const descLines = pdf.splitTextToSize(description, colWidths[1] - 6);
-      // Allow up to 3 lines for better description visibility
-      const limitedDescLines = descLines.slice(0, 3);
-      const rowActualHeight = Math.max(rowHeight, Math.min(limitedDescLines.length * 4 + 8, 30));
+      const descLines = pdf.splitTextToSize(description, colWidths[1] - 8);
+      // Allow up to 4 lines for better description visibility in narrower column
+      const limitedDescLines = descLines.slice(0, 4);
+      const rowActualHeight = Math.max(rowHeight, Math.min(limitedDescLines.length * 4 + 8, 35));
 
       // Add alternating row background for professional appearance
       if (index % 2 === 1) {
@@ -522,7 +522,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       
       // Handle descriptions with controlled wrapping within cell bounds
       limitedDescLines.forEach((line: string, lineIndex: number) => {
-        addText(line, colX[1] + 3, currentY + 9 + (lineIndex * 4), { fontSize: 9, color: [51, 51, 51] });
+        addText(line, colX[1] + 2, currentY + 9 + (lineIndex * 4), { fontSize: 8, color: [51, 51, 51] });
       });
       
       // Format numbers with thousands separators and proper alignment
