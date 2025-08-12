@@ -4,12 +4,24 @@ import { SMART_UNIVERSE_LOGO_BASE64 } from './logoBase64';
 
 // Note: SAR currency symbol is handled as text in the PDF
 
+// Saudi Riyal symbol as base64 image (small icon)
+const SAUDI_RIYAL_SYMBOL_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIgM0g0VjEwSDJWM0g4VjVIMTJWMTBIMTBWN0g4VjVIMTJWNEg4VjNIMTJWMkgxMFYzSDhWMkg2VjNIMloiIGZpbGw9IiMxZTRhYWYiLz4KPC9zdmc+';
+
 // Helper function to format currency with thousands separators
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+// Helper function to add Saudi Riyal symbol as image
+function addSaudiRiyalSymbol(pdf: jsPDF, x: number, y: number, size: number = 3) {
+  try {
+    pdf.addImage(SAUDI_RIYAL_SYMBOL_BASE64, 'PNG', x, y - size/2, size, size);
+  } catch (error) {
+    console.warn('Could not add Saudi Riyal symbol image:', error);
+  }
 }
 
 // Helper function to format currency with Saudi Riyal symbol
@@ -108,7 +120,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
   // Custom terms and conditions - use the actual terms from the quote
   const customTerms = quote.terms || settings.defaultTerms || [
     'Payment terms: 30 days from invoice date',
-    'All prices are in Saudi Riyals (SAR)',
+            'All prices are in Saudi Riyals (SAR)',
     'VAT is included in all prices',
     'This quotation is valid for 30 days',
     'Delivery will be made within 7-14 business days'
@@ -121,6 +133,9 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
 
   // Create PDF using jsPDF with proper encoding
   const pdf = new jsPDF('p', 'mm', 'a4');
+  
+  // Note: Font embedding for custom symbols in jsPDF is complex
+  // We'll use a different approach for the Saudi Riyal symbol
   
   // Set document properties for proper Unicode support
   pdf.setProperties({
@@ -518,8 +533,8 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
       // Cap quantity at reasonable levels and default to 1 if unrealistic
       const normalizedQuantity = (quantity > 1000 || quantity <= 0) ? 1 : quantity;
       const quantityText = normalizedQuantity === 1 ? '1 pc' : `${Math.round(normalizedQuantity).toLocaleString()} pcs`;
-      const unitPriceText = `${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SAR`;
-      const totalText = `${itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SAR`;
+              const unitPriceText = `${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const totalText = `${itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       
       // Center quantity, center unit price, right-align total
       addText(quantityText, colX[2] + colWidths[2]/2, currentY + 9, { fontSize: 10, color: [51, 51, 51], align: 'center' });
@@ -564,7 +579,7 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
     
     // Subtotal - Bold label with proper number formatting
     addText('Subtotal', totalsStartX, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51] });
-    addText(`${formatCurrency(subtotal)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
+            addText(`${formatCurrency(subtotal)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
     currentY += 6; // Improved spacing
 
     // Discount - if applicable with bold label
@@ -573,20 +588,20 @@ export async function generateQuotationPDF(quote: any, settings: any = {}) {
         ? `Discount (${discountValue}%)`
         : 'Discount (Fixed)';
       addText(discountLabel, totalsStartX, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51] });
-      addText(`-${formatCurrency(discountAmount)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
+              addText(`-${formatCurrency(discountAmount)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
       currentY += 6;
     }
 
     // VAT - Bold label with proper number formatting
     const vatLabel = `VAT (${vatRate}%)`;
     addText(vatLabel, totalsStartX, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51] });
-    addText(`${formatCurrency(vatAmount)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
+            addText(`${formatCurrency(vatAmount)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 10, fontStyle: 'bold', color: [51, 51, 51], align: 'right' });
     currentY += 6;
 
     // Total - Enhanced formatting with proper thousands separators
     currentY += 3; // Small gap before total
     addText('Total', totalsStartX, currentY, { fontSize: 12, fontStyle: 'bold', color: [30, 64, 175] });
-    addText(`${formatCurrency(total)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 12, fontStyle: 'bold', color: [30, 64, 175], align: 'right' });
+            addText(`${formatCurrency(total)} SAR`, tableCenterX + tableWidth - 5, currentY, { fontSize: 12, fontStyle: 'bold', color: [30, 64, 175], align: 'right' });
     currentY += 10;
 
     // Quotation validity - directly under totals, aligned with table
