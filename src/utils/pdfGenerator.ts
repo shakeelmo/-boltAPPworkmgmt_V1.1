@@ -18,7 +18,7 @@ function formatCurrencyWithSymbol(amount: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-  // Use "SAR" text instead of Unicode symbol for better PDF compatibility
+  // Use "SAR" text for PDF compatibility - the symbol will be added separately in the UI
   return `${formattedAmount} SAR`;
 }
 
