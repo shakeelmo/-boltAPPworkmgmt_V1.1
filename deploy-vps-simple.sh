@@ -4,9 +4,11 @@
 # VPS Details: 109.199.116.107
 # Username: root
 # Password: X9mK4LpZq7GtV2Fb
+# Domain: work.smartuniit.com
 
 echo "🚀 Starting deployment to VPS: 109.199.116.107"
-echo "📦 Deploying: Enhanced table layout with extended description column"
+echo "🌐 Domain: work.smartuniit.com"
+echo "📦 Deploying: Professional Table Layout with Page Fit & Enhanced Readability"
 echo ""
 
 # Manual deployment steps
@@ -36,5 +38,14 @@ echo ""
 echo "systemctl reload nginx"
 echo ""
 echo "✅ Deployment completed!"
-echo "🌐 Your app will be available at: http://109.199.116.107"
+echo "🌐 Your app will be available at: http://work.smartuniit.com"
 echo "📋 Check status with: pm2 status"
+echo ""
+echo "🎯 Latest Improvements:"
+echo "• Table fits perfectly within A4 page margins"
+echo "• Optimized column widths: [18, 85, 25, 32, 30] mm"
+echo "• Enhanced text wrapping for descriptions (up to 4 lines)"
+echo "• Professional readability with proper spacing"
+echo "• No more table overflow issues"
+echo "• Fully customizable Terms & Conditions"
+echo "• Professional PDF generation with enhanced layout"

@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
     // Create user - fixed column names to match database schema
     const userId = Date.now().toString();
     await run(
-      `INSERT INTO users (id, email, name, role, password, status) 
+      `INSERT INTO users (id, email, name, role, password_hash, status) 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [userId, email, name, 'admin', hashedPassword, 'active']
     );
@@ -98,11 +98,11 @@ router.post('/login', async (req, res) => {
     }
 
     // Check password
-    if (!user.password) {
+    if (!user.password_hash) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
     
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -283,7 +283,7 @@ router.post('/create-user', async (req, res) => {
     const userId = 'user-' + Date.now();
     
     await run(
-      `INSERT INTO users (id, name, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
       [userId, name, email, hashedPassword, role, 'active']
     );
     

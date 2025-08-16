@@ -1,0 +1,41 @@
+# Manual Deployment Commands for VPS
+# Copy and paste these commands one by one on your VPS
+
+# 1. Connect to your VPS
+ssh root@109.199.116.107
+
+# 2. Navigate to web directory
+cd /var/www
+
+# 3. Check if repository exists and update/clone
+if [ -d 'smartuniit-taskflow' ]; then
+    cd smartuniit-taskflow
+    git pull origin main
+else
+    git clone https://github.com/shakeelmo/-boltAPPworkmgmt_V1.1.git smartuniit-taskflow
+    cd smartuniit-taskflow
+fi
+
+# 4. Install frontend dependencies
+npm install
+
+# 5. Build frontend
+npm run build
+
+# 6. Install backend dependencies
+cd server && npm install && cd ..
+
+# 7. Restart PM2 process
+pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+pm2 save
+
+# 8. Reload Nginx
+systemctl reload nginx
+
+# 9. Check status
+pm2 status
+
+# 10. Test the application
+curl -I http://work.smartuniit.com
+
+# Your app should now be available at: http://work.smartuniit.com

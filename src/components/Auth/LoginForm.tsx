@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Info, ExternalLink, User, Building, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { SMART_UNIVERSE_LOGO_BASE64 } from '../../utils/logoBase64';
 
 export function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -72,7 +73,7 @@ export function LoginForm() {
 
   const handleDemoLogin = (demoEmail: string) => {
     setEmail(demoEmail);
-    setPassword(demoEmail === 'admin@example.com' ? 'admin123' : 'password123');
+    setPassword('admin123');
     setError('');
     setShowSetupInstructions(false);
     setIsSignUp(false);
@@ -96,7 +97,7 @@ export function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <img 
-            src="/smaruniit_logo.png" 
+            src={SMART_UNIVERSE_LOGO_BASE64}
             alt="Smart Universe" 
             className="mx-auto h-16 w-auto mb-6"
           />
@@ -288,7 +289,7 @@ export function LoginForm() {
                           </li>
                           <li>Navigate to Authentication → Users</li>
                           <li>Click "Add User" and create these accounts:</li>
-                          <li className="ml-4">• admin@example.com (password: admin123)</li>
+                          <li className="ml-4">• admin@smartuniit.com (password: admin123)</li>
                           <li className="ml-4">• manager@smartuniit.com (password: password123)</li>
                           <li className="ml-4">• tech@smartuniit.com (password: password123)</li>
                           <li>Disable "Email Confirmation" in Auth settings</li>
@@ -331,11 +332,11 @@ export function LoginForm() {
               <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDemoLogin('admin@example.com')}
+                  onClick={() => handleDemoLogin('admin@smartuniit.com')}
                   className="w-full text-left px-3 py-2 text-xs bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
                 >
                   <div className="font-medium text-dark-700">Admin</div>
-                  <div className="text-dark-500">admin@example.com</div>
+                  <div className="text-dark-500">admin@smartuniit.com</div>
                 </button>
                 <button
                   type="button"
